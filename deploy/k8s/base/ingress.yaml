@@ -42,6 +42,9 @@ apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: demo-axa
+  annotations:
+    # Le provider CRD de Traefik est restreint à cette classe (--providers.kubernetescrd.ingressClass=traefik).
+    kubernetes.io/ingress.class: traefik
 spec:
   entryPoints:
     - websecure

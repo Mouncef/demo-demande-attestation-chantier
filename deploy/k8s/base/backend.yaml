@@ -91,6 +91,8 @@ spec:
               mountPath: /app/staticfiles
             - name: cache
               mountPath: /app/.cache
+            - name: gunicorn
+              mountPath: /app/.gunicorn
       volumes:
         - name: media
           persistentVolumeClaim:
@@ -100,6 +102,8 @@ spec:
         - name: staticfiles
           emptyDir: {}
         - name: cache
+          emptyDir: {}
+        - name: gunicorn
           emptyDir: {}
 ---
 apiVersion: v1
