@@ -62,7 +62,7 @@ export interface FDR {
   travaux_standards: boolean | null;
 }
 
-export type ActionPossible = 'modifier_fdr' | 'supprimer';
+export type ActionPossible = 'modifier_fdr' | 'gerer_pieces' | 'supprimer';
 
 export interface DemandeListe {
   id: string;
@@ -118,6 +118,49 @@ export interface Pagination<T> {
   results: T[];
 }
 
+export interface PieceResume {
+  id: string;
+  nom_fichier: string;
+  nom_original: string;
+  type_piece: string;
+  taille: number;
+  created_at: string | null;
+}
+
+export interface EtatExigence {
+  code: string;
+  libelle: string;
+  niveau: 'REQUIS' | 'RECOMMANDE';
+  raison: string;
+  satisfait: boolean;
+  pieces: PieceResume[];
+}
+
+export interface Completude {
+  complet: boolean;
+  exigences: EtatExigence[];
+  pieces_hors_exigence: (PieceResume & { libelle: string; info: string })[];
+  manquants: string[];
+  fdr_valide: boolean;
+  erreurs_fdr: Record<string, string>;
+  pret_pour_envoi: boolean;
+}
+
+export interface PieceJointe {
+  id: string;
+  type_piece: string;
+  libelle_type: string;
+  /** Nom de la pièce : libellé du type (+ numéro si doublon) avec extension. */
+  nom_fichier: string;
+  /** Nom du fichier tel que déposé (information). */
+  nom_original: string;
+  mime: string;
+  taille: number;
+  sha256: string;
+  deposee_par: string;
+  created_at: string;
+}
+
 export interface Historique {
   id: number;
   action: string;
@@ -141,7 +184,9 @@ export interface Referentiels {
   types_chantier: Choix[];
   usages: Choix[];
   types_intervention: Choix[];
+  types_pieces: (Choix & { description: string })[];
   seuil_gros_chantier: string;
+  upload: { max_bytes: number; extensions: string[] };
 }
 
 /** Format d'erreur normalisé renvoyé par le backend. */

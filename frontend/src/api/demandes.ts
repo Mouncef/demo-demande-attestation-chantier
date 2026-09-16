@@ -1,11 +1,22 @@
-// Hooks React Query pour les demandes, le FDR et les référentiels.
+// Hooks React Query pour les demandes, le FDR, la complétude, le scoring et les référentiels.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from './client';
-import type { DemandeDetail, DemandeListe, FDR, Historique, Pagination, Referentiels } from './types';
+import type {
+  Completude,
+  DemandeDetail,
+  DemandeListe,
+  FDR,
+  Historique,
+  Pagination,
+  Referentiels,
+  Scoring,
+} from './types';
 
 export const cles = {
   demandes: (params?: FiltresDemandes) => ['demandes', params ?? {}] as const,
   demande: (id: string) => ['demande', id] as const,
+  completude: (id: string) => ['demande', id, 'completude'] as const,
+  scoring: (id: string) => ['demande', id, 'scoring'] as const,
   historique: (id: string) => ['demande', id, 'historique'] as const,
   referentiels: ['referentiels'] as const,
 };
@@ -42,6 +53,22 @@ export function useDemande(id: string | undefined) {
     queryKey: cles.demande(id ?? ''),
     queryFn: async () => (await api.get<DemandeDetail>(`/demandes/${id}/`)).data,
     enabled: Boolean(id),
+  });
+}
+
+export function useCompletude(id: string, enabled = true) {
+  return useQuery({
+    queryKey: cles.completude(id),
+    queryFn: async () => (await api.get<Completude>(`/demandes/${id}/completude/`)).data,
+    enabled,
+  });
+}
+
+export function useScoring(id: string, enabled = true) {
+  return useQuery({
+    queryKey: cles.scoring(id),
+    queryFn: async () => (await api.get<Scoring>(`/demandes/${id}/scoring/`)).data,
+    enabled,
   });
 }
 

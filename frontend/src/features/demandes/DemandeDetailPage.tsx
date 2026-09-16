@@ -1,10 +1,13 @@
-// Détail d'une demande : parcours en étapes pour le distributeur (FDR, historique), vue dossier pour le siège.
-import { useState } from 'react';
+// Détail d'une demande : parcours en étapes pour le distributeur (FDR → risque & pièces → historique),
+// vue dossier pour le siège. Une étape n'est accessible que si les précédentes sont valides.
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { useDemande, useHistorique, useSupprimerDemande } from '@/api/demandes';
+import { useQueryClient } from '@tanstack/react-query';
+import { cles, useCompletude, useDemande, useHistorique, useSupprimerDemande } from '@/api/demandes';
 import type { DemandeDetail } from '@/api/types';
 import { useAuth } from '@/features/auth/AuthContext';
 import { FdrForm } from '@/features/fdr/FdrForm';
+import { RisquePiecesStep } from '@/features/pieces/RisquePiecesStep';
 import { formatDateHeure, formatMontant } from '@/lib/format';
 import {
   BadgeDecision,
@@ -21,7 +24,7 @@ import {
   useToast,
 } from '@/design-system/components';
 
-type Etape = 'fdr' | 'historique';
+type Etape = 'fdr' | 'pieces' | 'historique';
 
 export function DemandeDetailPage() {
   const { id = '' } = useParams();
@@ -64,20 +67,53 @@ function VueDistributeur({ demande }: { demande: DemandeDetail }) {
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const toast = useToast();
+  const { data: completude } = useCompletude(demande.id);
+  const queryClient = useQueryClient();
   const supprimer = useSupprimerDemande();
   const [confirmerSuppression, setConfirmerSuppression] = useState(false);
   const peut = (a: string) => demande.actions_possibles.includes(a as never);
   const editable = peut('modifier_fdr');
 
-  const etape: Etape = (params.get('etape') as Etape) || 'fdr';
-  const aller = (e: string) => setParams({ etape: e });
+  // --- Verrouillage séquentiel : l'étape des pièces n'est accessible que si le FDR est valide. ---
+  const fdrValide = !editable || Boolean(completude?.fdr_valide);
+  const acces: Record<Etape, { ok: boolean; motif: string }> = {
+    fdr: { ok: true, motif: '' },
+    pieces: { ok: fdrValide, motif: 'Complétez et validez le formulaire FDR avant de passer aux pièces.' },
+    historique: { ok: true, motif: '' },
+  };
+  const etapeDemandee: Etape = (params.get('etape') as Etape) || 'fdr';
+  const etape: Etape = acces[etapeDemandee]?.ok ? etapeDemandee : 'fdr';
+  const allerDirect = (e: string) => setParams({ etape: e });
+  /** Navigation contrôlée : refuse (avec explication) une étape dont les prérequis ne sont pas remplis. */
+  const aller = (e: string) => {
+    const cible = acces[e as Etape];
+    if (cible && !cible.ok) {
+      toast.notifier(cible.motif, 'error');
+      return;
+    }
+    allerDirect(e);
+  };
+
+  // URL directe vers une étape verrouillée : on revient sur la première étape (une fois la complétude connue).
+  useEffect(() => {
+    if (editable && !completude) return;
+    if (!acces[etapeDemandee]?.ok) setParams({ etape: 'fdr' }, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `acces` est recalculé à chaque rendu
+  }, [etapeDemandee, editable, completude, setParams]);
+
   const etapes = [
-    { cle: 'fdr', libelle: 'Formulaire FDR' },
+    { cle: 'fdr', libelle: 'Formulaire FDR', termine: Boolean(completude?.fdr_valide) },
+    {
+      cle: 'pieces',
+      libelle: 'Risque & pièces',
+      termine: Boolean(completude?.fdr_valide && completude?.complet),
+      desactive: !acces.pieces.ok,
+    },
     { cle: 'historique', libelle: 'Historique' },
   ];
   const ordre = etapes.map((e) => e.cle);
   const index = ordre.indexOf(etape);
-  const precedent = index > 0 ? () => aller(ordre[index - 1]) : undefined;
+  const precedent = index > 0 ? () => allerDirect(ordre[index - 1]) : undefined;
   const suivant = index >= 0 && index < ordre.length - 1 ? () => aller(ordre[index + 1]) : undefined;
 
   return (
@@ -93,8 +129,21 @@ function VueDistributeur({ demande }: { demande: DemandeDetail }) {
       <Stepper etapes={etapes} courante={etape} onChange={aller} />
 
       {etape === 'fdr' && (
-        <FdrForm demande={demande} lectureSeule={!editable} onPrecedent={precedent} onSuivant={suivant} />
+        <FdrForm
+          demande={demande}
+          lectureSeule={!editable}
+          erreursEnvoi={editable ? completude?.erreurs_fdr : {}}
+          signalerErreurs={params.get('signaler') === '1'}
+          onPrecedent={precedent}
+          // Après « Valider et continuer », le FDR vient d'être validé et enregistré : on recharge la
+          // complétude (sinon le verrouillage s'appuierait sur l'état d'avant l'enregistrement) puis on avance.
+          onSuivant={async () => {
+            await queryClient.refetchQueries({ queryKey: cles.completude(demande.id) });
+            allerDirect('pieces');
+          }}
+        />
       )}
+      {etape === 'pieces' && <RisquePiecesStep demande={demande} lectureSeule={!peut('gerer_pieces')} />}
       {etape === 'historique' && <HistoriquePanel demande={demande} />}
       {etape !== 'fdr' && <StepNav onPrecedent={precedent} onSuivant={suivant} />}
 
@@ -125,7 +174,10 @@ function VueDistributeur({ demande }: { demande: DemandeDetail }) {
           </>
         }
       >
-        <p>Le brouillon {demande.reference} et son FDR seront supprimés. Cette action est irréversible.</p>
+        <p>
+          Le brouillon {demande.reference}, son FDR et ses pièces seront supprimés. Cette action est
+          irréversible.
+        </p>
       </Modal>
     </>
   );
@@ -136,6 +188,7 @@ function VueSiege({ demande }: { demande: DemandeDetail }) {
   const onglet = params.get('onglet') ?? 'dossier';
   const onglets = [
     { cle: 'dossier', libelle: 'Dossier (FDR)' },
+    { cle: 'pieces', libelle: 'Risque & pièces' },
     { cle: 'historique', libelle: 'Historique' },
   ];
   return (
@@ -158,6 +211,7 @@ function VueSiege({ demande }: { demande: DemandeDetail }) {
       </Card>
       <Tabs onglets={onglets} actif={onglet} onChange={(o) => setParams({ onglet: o })} />
       {onglet === 'dossier' && <FdrForm demande={demande} lectureSeule />}
+      {onglet === 'pieces' && <RisquePiecesStep demande={demande} lectureSeule />}
       {onglet === 'historique' && <HistoriquePanel demande={demande} />}
     </>
   );

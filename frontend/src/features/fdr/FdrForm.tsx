@@ -1,14 +1,15 @@
 // Écran 2 : Formulaire de Déclaration du Risque – formulaire dynamique (sections conditionnelles),
 // sauvegarde brouillon avec verrou optimiste, erreurs backend mappées champ par champ.
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEnregistrerFdr, useInvaliderDemande } from '@/api/demandes';
+import { useEnregistrerFdr, useInvaliderDemande, useReferentiels } from '@/api/demandes';
 import { erreurApi } from '@/api/client';
 import type { DemandeDetail } from '@/api/types';
 import { LIBELLES_INTERVENTION, LIBELLES_TYPE_CHANTIER, LIBELLES_USAGE } from '@/lib/libelles';
 import {
   Alert,
+  Badge,
   Button,
   Card,
   Field,
@@ -20,6 +21,7 @@ import {
   Textarea,
   useToast,
 } from '@/design-system/components';
+import { calculerExigencesClient } from './reglesPieces';
 import {
   depuisFdr,
   schemaFdr,
@@ -51,6 +53,7 @@ export function FdrForm({
   signalerErreurs = false,
 }: Props) {
   const toast = useToast();
+  const { data: referentiels } = useReferentiels();
   const enregistrer = useEnregistrerFdr(demande.id);
   const invalider = useInvaliderDemande();
   const form = useForm<FdrFormValues, unknown, FdrFormOutput>({
@@ -76,6 +79,11 @@ export function FdrForm({
   }, [demande.fdr, demande.version, reset]);
 
   const valeurs = useWatch({ control });
+  const exigences = useMemo(() => calculerExigencesClient(valeurs), [valeurs]);
+  const libelles = useMemo(
+    () => Object.fromEntries((referentiels?.types_pieces ?? []).map((t) => [t.code, t.libelle])),
+    [referentiels],
+  );
 
   /** Enregistre le FDR ; renvoie `true` en cas de succès (erreurs API mappées champ par champ sinon). */
   const sauvegarder = async (valides: FdrFormOutput): Promise<boolean> => {
@@ -536,6 +544,32 @@ export function FdrForm({
           </Field>
         </Card>
       </div>
+
+      <Card
+        titre="📂 Pièces qui seront requises"
+        variante={exigences.some((e) => e.niveau === 'REQUIS') ? 'danger' : 'success'}
+        className="mt-2"
+      >
+        {exigences.length === 0 ? (
+          <p className="muted" style={{ margin: 0 }}>
+            Aucune pièce justificative n'est requise avec les réponses actuelles.
+          </p>
+        ) : (
+          <ul className="checklist">
+            {exigences.map((e) => (
+              <li key={e.code}>
+                <Badge couleur={e.niveau === 'REQUIS' ? 'red' : 'orange'}>
+                  {e.niveau === 'REQUIS' ? 'Requis' : 'Recommandé'}
+                </Badge>
+                <div>
+                  <strong>{libelles[e.code] ?? e.code}</strong>
+                  <div className="small muted">{e.raison}</div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
 
       {/* Barre d'actions unique : Précédent | (état) Enregistrer le brouillon · Valider et continuer */}
       <StepNav

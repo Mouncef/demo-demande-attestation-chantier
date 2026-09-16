@@ -43,5 +43,9 @@ export const LIBELLES_ERREURS_API: Record<string, string> = {
   INTROUVABLE: 'Ressource introuvable ou inaccessible.',
   NON_AUTHENTIFIE: 'Votre session a expiré, veuillez vous reconnecter.',
   VALIDATION: 'Certaines données sont invalides.',
+  TYPE_FICHIER_NON_AUTORISE: "Ce type de fichier n'est pas autorisé.",
+  FICHIER_TROP_VOLUMINEUX: 'Le fichier dépasse la taille maximale autorisée.',
+  PIECE_DUPLIQUEE: 'Ce fichier a déjà été déposé sur cette demande.',
+  QUOTA_PIECES: 'Nombre ou volume maximal de pièces atteint.',
   RESEAU: 'Le serveur est injoignable.',
 };
