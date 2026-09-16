@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     # Métier
     "apps.core",
     "apps.comptes",
+    "apps.demandes",
 ]
 
 MIDDLEWARE = [
@@ -184,6 +185,8 @@ SPECTACULAR_SETTINGS = {
     "SCHEMA_PATH_PREFIX": r"/api/v1",
     "TAGS": [
         {"name": "auth", "description": "Authentification JWT"},
+        {"name": "demandes", "description": "Demandes d'attestation et FDR"},
+        {"name": "referentiels", "description": "Valeurs de référence pour le formulaire dynamique"},
     ],
 }
 
@@ -217,6 +220,18 @@ MEDIA_ROOT = Path(env("MEDIA_ROOT", str(BASE_DIR / "media")))
 MEDIA_URL = ""  # volontairement vide : pas d'URL publique
 FILE_UPLOAD_PERMISSIONS = 0o640
 FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o750
+
+# ---------------------------------------------------------------------------
+# Paramètres métier
+# ---------------------------------------------------------------------------
+METIER = {
+    # Seuil de coût total au-delà duquel le chantier est considéré comme « gros chantier » (strictement supérieur).
+    "SEUIL_GROS_CHANTIER": "10000000.00",
+    # Bornes de plausibilité des dates du chantier.
+    "FDR_DATE_DEBUT_MAX_PAST_DAYS": 365,
+    "FDR_DATE_DEBUT_MAX_FUTURE_DAYS": 3 * 365,
+    "FDR_DUREE_MAX_DAYS": 10 * 365,
+}
 
 # ---------------------------------------------------------------------------
 # Journalisation
