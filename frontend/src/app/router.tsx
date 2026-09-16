@@ -3,7 +3,8 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { Layout } from './Layout';
 import { RequireAuth } from './RequireAuth';
 import { LoginPage } from '@/features/auth/LoginPage';
-import { AccueilPage } from '@/features/accueil/AccueilPage';
+import { DemandesListPage } from '@/features/demandes/DemandesListPage';
+import { DemandeDetailPage } from '@/features/demandes/DemandeDetailPage';
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -15,8 +16,10 @@ export const router = createBrowserRouter([
       </RequireAuth>
     ),
     children: [
-      { index: true, element: <AccueilPage /> },
-      { path: '*', element: <Navigate to="/" replace /> },
+      { index: true, element: <Navigate to="/demandes" replace /> },
+      { path: 'demandes', element: <DemandesListPage /> },
+      { path: 'demandes/:id', element: <DemandeDetailPage /> },
+      { path: '*', element: <Navigate to="/demandes" replace /> },
     ],
   },
 ]);

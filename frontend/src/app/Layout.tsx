@@ -10,14 +10,12 @@ export function Layout() {
     <div className="layout">
       <header className="header">
         <div className="header__inner">
-          <NavLink to="/" className="brand" aria-label="Accueil">
+          <NavLink to="/demandes" className="brand" aria-label="Accueil">
             <img className="brand__logo" src="/logo.png" alt="AXA" />
             <span className="brand__title">Attestations de chantier</span>
           </NavLink>
           <nav className="nav" aria-label="Navigation principale">
-            <NavLink to="/" end>
-              Accueil
-            </NavLink>
+            <NavLink to="/demandes">Demandes</NavLink>
           </nav>
           {/* Mini Switch : signature AXA issue du logo, une seule fois par écran. */}
           <svg className="header__switch" viewBox="0 0 22 44" aria-hidden focusable="false">

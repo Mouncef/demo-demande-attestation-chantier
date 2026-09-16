@@ -4,6 +4,9 @@ export type Role = 'DISTRIBUTEUR' | 'SIEGE';
 export type Statut = 'BROUILLON' | 'EN_COURS' | 'A_COMPLETER' | 'TRAITE';
 export type Decision = 'ACCEPTEE' | 'REFUSEE' | null;
 export type NiveauRisque = 'FAIBLE' | 'MODERE' | 'ELEVE';
+export type TypeChantier = 'CONSTRUCTION_NEUVE' | 'RENOVATION';
+export type Usage = 'HABITATION' | 'BUREAU' | 'COMMERCE' | 'AUTRE';
+export type TypeIntervention = 'ENTREPRISE_PRINCIPALE' | 'SOUS_TRAITANT';
 
 export interface Utilisateur {
   id: number;
@@ -22,6 +25,123 @@ export interface LoginReponse {
   access: string;
   refresh: string;
   utilisateur: Utilisateur;
+}
+
+export interface UtilisateurLeger {
+  id: number;
+  nom_affichage: string;
+  email: string;
+  organisation: string;
+}
+
+/** Formulaire de Déclaration du Risque – tous les champs sont nullables (brouillon). */
+export interface FDR {
+  assure_nom: string | null;
+  assure_adresse: string | null;
+  assure_code_postal: string | null;
+  assure_ville: string | null;
+  assure_siret: string | null;
+  numero_contrat: string | null;
+  reference_client: string | null;
+  chantier_nom: string | null;
+  chantier_ville: string | null;
+  type_chantier: TypeChantier | null;
+  modification_structure: boolean | null;
+  usage: Usage | null;
+  usage_autre_precision: string | null;
+  chantier_atypique: boolean | null;
+  date_debut: string | null;
+  date_fin: string | null;
+  cout_total: string | null;
+  description_travaux: string | null;
+  montant_prestation: string | null;
+  type_intervention: TypeIntervention | null;
+  entreprise_principale_nom: string | null;
+  activite_couverte: boolean | null;
+  activite_non_couverte_precision: string | null;
+  travaux_standards: boolean | null;
+}
+
+export type ActionPossible = 'modifier_fdr' | 'supprimer';
+
+export interface DemandeListe {
+  id: string;
+  reference: string;
+  statut: Statut;
+  decision: Decision;
+  distributeur: UtilisateurLeger;
+  assure_nom: string | null;
+  chantier_nom: string | null;
+  chantier_ville: string | null;
+  cout_total: string | null;
+  niveau_risque: NiveauRisque | null;
+  submitted_at: string | null;
+  decided_at: string | null;
+  nb_soumissions: number;
+  created_at: string;
+  updated_at: string;
+  actions_possibles: ActionPossible[];
+}
+
+export interface Indicateur {
+  code: string;
+  libelle: string;
+  points: number;
+  detail: string;
+}
+
+export interface Scoring {
+  points: number;
+  score: number;
+  niveau: NiveauRisque;
+  indicateurs: Indicateur[];
+  planchers: string[];
+  synthese: string;
+}
+
+export interface DemandeDetail extends DemandeListe {
+  fdr: FDR;
+  version: number;
+  commentaire_distributeur: string;
+  commentaire_siege: string;
+  motif_refus: string;
+  message_complements: string;
+  first_submitted_at: string | null;
+  decided_by: UtilisateurLeger | null;
+  scoring_snapshot: Scoring | null;
+}
+
+export interface Pagination<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
+export interface Historique {
+  id: number;
+  action: string;
+  action_libelle: string;
+  de_statut: Statut | null;
+  vers_statut: Statut | null;
+  decision: Decision;
+  acteur: UtilisateurLeger;
+  commentaire: string;
+  created_at: string;
+}
+
+export interface Choix {
+  code: string;
+  libelle: string;
+}
+
+export interface Referentiels {
+  statuts: Choix[];
+  decisions: Choix[];
+  types_chantier: Choix[];
+  usages: Choix[];
+  types_intervention: Choix[];
+  seuil_gros_chantier: string;
 }
 
 /** Format d'erreur normalisé renvoyé par le backend. */

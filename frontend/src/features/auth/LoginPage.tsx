@@ -19,7 +19,7 @@ export function LoginPage() {
   const [erreur, setErreur] = useState<string | null>(null);
   const [chargement, setChargement] = useState(false);
 
-  if (utilisateur) return <Navigate to="/" replace />;
+  if (utilisateur) return <Navigate to="/demandes" replace />;
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -28,7 +28,7 @@ export function LoginPage() {
     try {
       await connecter(email.trim(), password);
       const from = (location.state as { from?: string } | null)?.from;
-      navigate(from && from !== '/login' ? from : '/', { replace: true });
+      navigate(from && from !== '/login' ? from : '/demandes', { replace: true });
     } catch (err) {
       const e = erreurApi(err);
       setErreur(

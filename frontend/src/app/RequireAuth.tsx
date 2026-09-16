@@ -10,6 +10,6 @@ export function RequireAuth({ children, role }: { children: ReactNode; role?: Ro
   const location = useLocation();
   if (chargement) return <Spinner label="Vérification de la session…" />;
   if (!utilisateur) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
-  if (role && utilisateur.role !== role) return <Navigate to="/" replace />;
+  if (role && utilisateur.role !== role) return <Navigate to="/demandes" replace />;
   return <>{children}</>;
 }
