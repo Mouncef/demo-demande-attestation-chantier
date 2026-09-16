@@ -1,4 +1,4 @@
-"""Classes de limitation de débit ciblées (login, uploads)."""
+"""Classes de limitation de débit ciblées (login, uploads, analyse IA)."""
 
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 
@@ -11,3 +11,7 @@ class LoginThrottle(AnonRateThrottle):
 
 class UploadThrottle(UserRateThrottle):
     scope = "uploads"
+
+
+class AnalyseIAThrottle(UserRateThrottle):
+    scope = "analyse_ia"

@@ -235,6 +235,12 @@ def actions_possibles(demande: Demande, utilisateur: User) -> list[str]:
     Calculé côté serveur pour que le frontend affiche les boutons sans dupliquer les règles.
     """
     actions: list[str] = []
+    # Attestations préchargées par la vue (prefetch) : aucune requête supplémentaire par ligne.
+    attestations = {a.kind: a for a in demande.attestations.all()}
+    definitive = attestations.get("DEFINITIVE")
+    projet = attestations.get("PROJET")
+    definitive_etablie = bool(definitive and definitive.statut == "VALIDEE")
+
     if utilisateur.est_distributeur and demande.distributeur_id == utilisateur.id:
         if demande.est_editable:
             actions += ["modifier_fdr", "gerer_pieces", "envoyer"]
@@ -242,6 +248,16 @@ def actions_possibles(demande: Demande, utilisateur: User) -> list[str]:
             actions.append("supprimer")
         if demande.statut == Statut.EN_COURS:
             actions.append("relancer")
-    if utilisateur.est_siege and demande.statut == Statut.EN_COURS:
-        actions += ["accepter", "refuser", "demander_complements", "commenter"]
+        # Le projet se prépare une fois la demande acceptée, tant que la définitive n'est pas établie.
+        if demande.est_acceptee and not definitive_etablie:
+            actions.append("editer_projet_attestation")
+        if definitive_etablie:
+            actions.append("telecharger_attestation_definitive")
+    if utilisateur.est_siege:
+        if demande.statut == Statut.EN_COURS:
+            actions += ["accepter", "refuser", "demander_complements", "commenter"]
+        if demande.est_acceptee and not definitive_etablie:
+            actions.append("editer_attestation_definitive")
+            if projet and projet.statut == "SOUMISE":
+                actions.append("traiter_projet_attestation")
     return actions

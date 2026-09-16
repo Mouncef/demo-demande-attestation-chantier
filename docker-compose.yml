@@ -61,6 +61,7 @@ services:
       MEDIA_ROOT: /data/media
       RELANCE_COOLDOWN_HOURS: ${RELANCE_COOLDOWN_HOURS:-24}
       RELANCE_DELAI_INITIAL_HOURS: ${RELANCE_DELAI_INITIAL_HOURS:-0}
+      IA_SIMULATED_DELAY_MS: ${IA_SIMULATED_DELAY_MS:-800}
     volumes:
       - media:/data/media
     depends_on:

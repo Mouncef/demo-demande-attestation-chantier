@@ -8,6 +8,7 @@ Les contrôles d'état sont délégués aux services (409).
 
 from __future__ import annotations
 
+from django.db.models import Prefetch
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
@@ -71,7 +72,11 @@ class DemandeViewSet(
         return [IsAuthenticated()]
 
     def get_queryset(self):  # type: ignore[override]
-        qs = Demande.objects.select_related("fdr", "distributeur", "decided_by")
+        from apps.attestations.models import Attestation
+
+        qs = Demande.objects.select_related("fdr", "distributeur", "decided_by").prefetch_related(
+            Prefetch("attestations", queryset=Attestation.objects.only("id", "demande_id", "kind", "statut")),
+        )
         utilisateur = self.request.user
         if utilisateur.est_siege:
             return qs

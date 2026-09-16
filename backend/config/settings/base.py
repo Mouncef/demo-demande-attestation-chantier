@@ -69,6 +69,7 @@ INSTALLED_APPS = [
     "apps.comptes",
     "apps.demandes",
     "apps.pieces",
+    "apps.attestations",
     "apps.documents",
     "apps.notifications",
 ]
@@ -166,6 +167,7 @@ REST_FRAMEWORK = {
         "anon": "100/hour",
         "login": "10/min",
         "uploads": "60/hour",
+        "analyse_ia": "30/hour",
     },
 }
 
@@ -182,7 +184,11 @@ SIMPLE_JWT = {
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "API – Demandes d'attestation de chantier (AXA)",
-    "DESCRIPTION": "API REST de la plateforme interne de gestion des demandes d'attestation de chantier.",
+    "DESCRIPTION": (
+        "API REST de la plateforme interne de gestion des demandes d'attestation de chantier : "
+        "saisie du Formulaire de Déclaration du Risque (FDR), pièces justificatives, scoring de "
+        "risque, workflow siège, éditeur d'attestation et analyse de cohérence simulée."
+    ),
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
@@ -191,6 +197,7 @@ SPECTACULAR_SETTINGS = {
         {"name": "auth", "description": "Authentification JWT"},
         {"name": "demandes", "description": "Demandes d'attestation et FDR"},
         {"name": "pieces", "description": "Pièces justificatives"},
+        {"name": "attestations", "description": "Projets et attestations définitives, analyse IA"},
         {"name": "notifications", "description": "Notifications in-app"},
         {"name": "referentiels", "description": "Valeurs de référence pour le formulaire dynamique"},
     ],
@@ -241,7 +248,7 @@ DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "attestations-chantier@axa-demo.f
 FRONTEND_URL = env("FRONTEND_URL", "http://localhost:8080").rstrip("/")
 
 # ---------------------------------------------------------------------------
-# Paramètres métier
+# Paramètres métier (règles du FDR, pièces, relances, attestations)
 # ---------------------------------------------------------------------------
 METIER = {
     # Seuil de coût total au-delà duquel le chantier est considéré comme « gros chantier » (strictement supérieur).
@@ -258,9 +265,43 @@ METIER = {
     "UPLOAD_MAX_PIECES_PAR_DEMANDE": 20,
     "UPLOAD_MAX_TOTAL_BYTES_PAR_DEMANDE": 100 * 1024 * 1024,
     "UPLOAD_ALLOW_OFFICE": env_bool("UPLOAD_ALLOW_OFFICE", False),
+    # Analyse IA simulée.
+    "IA_SIMULATED_DELAY_MS": env_int("IA_SIMULATED_DELAY_MS", 0),
     # Boîte fonctionnelle du siège (si vide : email à chaque utilisateur SIEGE actif).
     "SIEGE_MAILBOX": env("SIEGE_MAILBOX", ""),
+    # Identité de l'assureur imprimée sur les attestations.
+    "ASSUREUR": {
+        "nom": "AXA France IARD",
+        "forme": "Société anonyme au capital de 214 799 030 €",
+        "rcs": "722 057 460 R.C.S. Nanterre",
+        "adresse": "313 Terrasses de l'Arche – 92727 Nanterre Cedex",
+        "mention": (
+            "Entreprise régie par le Code des assurances – ACPR, 4 place de Budapest, CS 92459, 75436 Paris Cedex 09"
+        ),
+    },
+    # Format officiel d'attestation AXA France (modèle « attestation-assurance-chantier.pdf ») : valeurs par
+    # défaut reprises dans le gabarit, rectifiables par le siège dans l'éditeur avant validation.
+    "ATTESTATION": {
+        "accroche": "réinventons / notre métier",
+        "assureur_atteste": "AXA France, dont le siège social est situé Terrasses de l'Arche 92000 Nanterre",
+        "produit": "BTPlus Concept",
+        "plafond_cout_construction": "2 000 000 €",
+        "lieu_signature": "Nanterre",
+        "signataire": {"nom": "Mathieu GODART", "titre": "Directeur Général Délégué d'AXA France"},
+        "mentions_legales": (
+            "AXA France IARD S.A. au capital de 214 799 030 €. 722 057 460 R.C.S. Nanterre. TVA intracommunautaire "
+            "n° FR 14 722 057 460 • AXA Assurances IARD Mutuelle. Société d'Assurance Mutuelle à cotisations fixes "
+            "contre l'incendie, les accidents et risques divers. Siren 775 699 309. TVA intracommunautaire "
+            "n° FR 39 775 699 309. Sièges sociaux : 313, Terrasses de l'Arche – 92727 Nanterre Cedex • Entreprises "
+            "régies par le Code des Assurances. Opérations d'assurances exonérées de TVA – art. 261-C CGI – sauf "
+            "pour les garanties portées par AXA Assistance France Assurances."
+        ),
+        # Tableau de garanties du modèle (Garanties / Limite de garantie)
+        "franchise": "950 €",
+        "plafond_indexation": "15 250 000 euros",
+    },
 }
+
 
 # Limite globale de taille des requêtes (multipart) alignée sur la taille max d'une pièce
 # avec une marge pour les champs du formulaire.

@@ -5,7 +5,7 @@ import os
 os.environ.setdefault("DJANGO_SECRET_KEY", "cle-de-test-non-secrete-0123456789abcdef0123456789")
 
 from .base import *  # noqa: E402,F401,F403
-from .base import BASE_DIR, REST_FRAMEWORK  # noqa: E402
+from .base import BASE_DIR, METIER, REST_FRAMEWORK  # noqa: E402
 
 DEBUG = False
 
@@ -18,7 +18,8 @@ EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 # Médias dans un répertoire temporaire isolé.
 MEDIA_ROOT = BASE_DIR / ".test-media"
 
-# Pas de throttling pendant les tests.
+# Pas de latence artificielle ni de throttling pendant les tests.
+METIER["IA_SIMULATED_DELAY_MS"] = 0
 REST_FRAMEWORK["DEFAULT_THROTTLE_CLASSES"] = []
 
 # Journalisation réduite au strict nécessaire pendant les tests.

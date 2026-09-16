@@ -1,0 +1,104 @@
+{# Corps éditable de l'attestation, conforme au modèle officiel AXA France (attestation-assurance-chantier.pdf). #}
+{# Les chips <span data-variable> sont non éditables et rafraîchies depuis le FDR ; le reste est rectifiable par le siège. #}
+<h1 class="titre-attestation">ATTESTATION D’ASSURANCE</h1>
+<p>{{ fmt.assureur_atteste }} atteste que :</p>
+<p class="bloc-assure"><strong><span data-variable="assure_nom">{{ v.assure_nom }}</span></strong><br><span data-variable="assure_adresse">{{ v.assure_adresse }}</span><br><span data-variable="assure_cp_ville">{{ v.assure_cp_ville }}</span><br>SIRET : <span data-variable="assure_siret">{{ v.assure_siret }}</span></p>
+<p>Est titulaire du contrat d’assurance n° <span data-variable="numero_contrat">{{ v.numero_contrat }}</span> (<span data-variable="produit">{{ v.produit }}</span>) pour la période du <span data-variable="contrat_periode_debut">{{ v.contrat_periode_debut }}</span> au <span data-variable="contrat_periode_fin">{{ v.contrat_periode_fin }}</span>.</p>
+
+<h2 class="section-chantier">Chantier concerné par la présente attestation</h2>
+<table class="chantier">
+  <tbody>
+    <tr><td>Désignation</td><td><span data-variable="chantier_nom">{{ v.chantier_nom }}</span></td></tr>
+    <tr><td>Localisation</td><td><span data-variable="chantier_ville">{{ v.chantier_ville }}</span></td></tr>
+    <tr><td>Nature des travaux</td><td><span data-variable="type_chantier">{{ v.type_chantier }}</span></td></tr>
+    <tr><td>Destination de l’ouvrage</td><td><span data-variable="usage">{{ v.usage }}</span></td></tr>
+    <tr><td>Période prévisionnelle</td><td>du <span data-variable="date_debut">{{ v.date_debut }}</span> au <span data-variable="date_fin">{{ v.date_fin }}</span></td></tr>
+    <tr><td>Coût total de l’opération</td><td><span data-variable="cout_total">{{ v.cout_total }}</span></td></tr>
+    <tr><td>Intervention de l’assuré</td><td><span data-variable="type_intervention">{{ v.type_intervention }}</span> – prestation de <span data-variable="montant_prestation">{{ v.montant_prestation }}</span></td></tr>
+    <tr><td>Travaux réalisés</td><td><span data-variable="description_travaux">{{ v.description_travaux }}</span></td></tr>
+  </tbody>
+</table>
+
+<h2>1- Les garanties objet de la présente attestation s’appliquent :</h2>
+<ul>
+  <li><p>Aux missions suivantes : activités rappelées au paragraphe « Activités Garanties » ci-après.</p></li>
+  <li><p>Aux travaux ayant fait l'objet d'une ouverture de chantier pendant la période de validité mentionnée ci-dessus. L’ouverture de chantier est définie à l’annexe I de l’article A. 243-1 du code des assurances.</p></li>
+  <li><p>Aux travaux réalisés en France métropolitaine.</p></li>
+  <li><p>Aux chantiers dont le coût total de construction HT tous corps d’état, y compris honoraires, déclaré par le maître d’ouvrage n’est pas supérieur à la somme de <span data-variable="plafond_cout">{{ v.plafond_cout }}</span>.</p></li>
+  <li><p>Aux travaux, produits et procédés de construction suivants :</p>
+    <ul>
+      <li><p>Travaux de construction répondant à une norme homologuée (NF DTU ou NF EN), à des règles professionnelles acceptées par la C2P (1) ou à des recommandations professionnelles du programme RAGE 2012 non mises en observation par la C2P (2) ;</p></li>
+      <li><p>Procédés ou produits faisant l’objet au jour de la passation du marché : d’un agrément technique européen (ATE) en cours de validité ou d’une évaluation technique européenne (ETE) bénéficiant d’un document technique d’application (DTA), ou d’un avis technique (ATec), valides et non mis en observation par la C2P (3) ; d’une appréciation technique d’expérimentation (ATEx) avec avis favorable ; d’un Pass innovation ‘vert’ en cours de validité.</p></li>
+    </ul>
+  </li>
+</ul>
+<p class="note">(1) Les règles professionnelles acceptées par la C2P (Commission prévention produits mis en œuvre par l’Agence qualité construction) sont listées à l’annexe 2 de la publication semestrielle de la C2P et sont consultables sur le site de l’Agence qualité construction (www.qualiteconstruction.com).<br>(2) Les recommandations professionnelles RAGE 2012 (règles de l’art Grenelle environnement 2012) sont consultables sur le site internet du programme RAGE (www.reglesdelart-grenelle-environnement-2012.fr) et les communiqués de la C2P sont accessibles sur le site de l’AQC (www.qualiteconstruction.com).<br>(3) Les communiqués de la C2P sont accessibles sur le site de l’AQC (www.qualiteconstruction.com).</p>
+<p>Dans le cas où les travaux réalisés ne répondent pas aux caractéristiques énoncées ci-dessus, l’assuré en informe l’assureur.</p>
+
+<h2>2- La garantie de responsabilité décennale obligatoire</h2>
+<ul>
+  <li><p><strong>Nature de la garantie :</strong></p>
+    <p>Le contrat garantit la responsabilité décennale de l'assuré instaurée par les articles 1792 et suivants du code civil, dans le cadre et les limites prévues par les dispositions des articles L. 241-1 et L. 241-2 du code des assurances relatives à l’obligation d’assurance décennale, et pour des travaux de construction d’ouvrages qui y sont soumis, au regard de l'article L. 243-1-1 du même code.</p>
+    <p>La garantie couvre les travaux de réparation, notamment en cas de remplacement des ouvrages, qui comprennent également les travaux de démolition, déblaiement, dépose ou démontage éventuellement nécessaires.</p>
+  </li>
+  <li><p><strong>Montant de la garantie :</strong></p>
+    <p>En habitation : le montant de la garantie couvre le coût des travaux de réparation des dommages à l’ouvrage.</p>
+    <p>Hors habitation : le montant de la garantie couvre le coût des travaux de réparation des dommages à l’ouvrage dans la limite du coût total de construction déclaré par le maître d’ouvrage et sans pouvoir être supérieur au montant prévu au I de l'article R. 243-3 du code des assurances.</p>
+    <p>Lorsqu’un contrat collectif de responsabilité décennale est souscrit au bénéfice de l’assuré, le montant de la garantie est égal au montant de la franchise absolue stipulée par ledit contrat collectif.</p>
+  </li>
+  <li><p><strong>Durée et maintien des garanties :</strong></p>
+    <p>La garantie s’applique pour la durée de la responsabilité décennale pesant sur l'assuré en vertu des articles 1792 et suivants du code civil. Elle est maintenue dans tous les cas pour la même durée.</p>
+  </li>
+</ul>
+<p>La présente attestation ne peut engager l’assureur au-delà des clauses et conditions du contrat auquel elle se réfère.</p>
+
+<h2>3- Autres garanties souscrites dans les limites et conditions du contrat auquel elles se réfèrent</h2>
+<p>Les garanties ci-dessous s’entendent dans les mêmes limites que celles visées au paragraphe 1 :</p>
+<ul>
+  <li><p>Responsabilité de sous-traitant en cas de dommages de nature décennale. Cette garantie est accordée, conformément à l’article 1792-4-2 du code civil, pour une durée de dix ans à compter de la réception et est gérée selon le régime de la capitalisation (Article 2.2 des Conditions Générales). Le montant de garantie est celui fixé au tableau des garanties ci-après.</p></li>
+</ul>
+<p>Les garanties ci-dessous s’entendent dans la limite des activités, coût total de construction, étendue géographique, travaux, produits et procédés de technique courante visés au paragraphe 1. Elles s’appliquent aux réclamations notifiées à l'assureur à compter du <span data-variable="contrat_periode_debut">{{ v.contrat_periode_debut }}</span> et, qui se rapportent à des faits dommageables survenus avant la date de résiliation ou d'expiration de la garantie, engageant la responsabilité de l’assuré en sa qualité de locateur d'ouvrage ou de sous-traitant pour :</p>
+<ul>
+  <li><p>Les dommages subis après réception par les éléments d'équipements dissociables des ouvrages soumis à l'assurance obligatoire à la réalisation duquel l'assuré a contribué (Article 2.5 des Conditions Générales).</p></li>
+  <li><p>Les dommages matériels intermédiaires affectant un ouvrage soumis à l’assurance obligatoire survenant après réception et dont la responsabilité incombe à l’assuré (Article 2.6 des Conditions Générales).</p></li>
+  <li><p>Les dommages matériels subis après réception par les existants, et qui sont la conséquence directe de l’exécution des travaux neufs, et dont la responsabilité incombe à l’assuré (Article 2.7 des Conditions Générales).</p></li>
+  <li><p>Les dommages immatériels résultant directement d’un dommage entraînant le versement d’une indemnité au titre des garanties citées aux articles 2.1, 2.2, 2.5, 2.6 ou 2.7 des conditions générales.</p></li>
+  <li><p>Responsabilité Civile qu'il peut encourir en raison des préjudices causés à autrui avant ou après réception des travaux (Article 2.10 des Conditions Générales).</p></li>
+</ul>
+
+<h2 class="section-droite">Activités Garanties</h2>
+<ul>
+  <li><p><span data-variable="description_travaux">{{ v.description_travaux }}</span> (travaux de second œuvre* uniquement) sans intervention sur structure porteuse.</p></li>
+</ul>
+<p><span data-variable="activites_garanties">{{ v.activites_garanties }}</span></p>
+<p class="note">* Les travaux de second œuvre excluent toute intervention sur le gros œuvre ou impactant les fondations (interventions sur structures porteuses, reprises en sous-œuvre, surélévation, création de sous-sols, suppression ou percements d’éléments porteurs, création de trémies dans les planchers et d’ouvertures dans les toitures).</p>
+
+<h2 class="section-droite">Tableau de garanties</h2>
+<table class="garanties">
+  <tbody>
+    <tr><th colspan="2">Garanties</th><th colspan="2">Limite de garantie</th></tr>
+    <tr class="sous-titre"><td colspan="2"><strong>Responsabilité civile décennale – Ouvrages soumis</strong></td><td colspan="2"><strong>Montant par sinistre</strong></td></tr>
+    <tr><td colspan="2">Responsabilité décennale pour travaux de construction soumis à l’assurance obligatoire (art 2.1)</td><td colspan="2">À hauteur du coût des réparations (1), pour un ouvrage n’excédant pas <span data-variable="plafond_cout">{{ v.plafond_cout }}</span> HT sans pouvoir dépasser le coût de l’ouvrage déclaré lorsqu’il n’est pas destiné à l’habitation</td></tr>
+    <tr><td colspan="2">Responsabilité de sous-traitant en cas de dommages de nature décennale (art 2.2)</td><td colspan="2"><strong>2 000 000 €</strong></td></tr>
+    <tr class="sous-titre"><td colspan="2"><strong>Responsabilité civile décennale – Ouvrages non soumis</strong></td><td colspan="2"><strong>Montant par sinistre et par année d’assurance</strong></td></tr>
+    <tr><td colspan="2">Responsabilité décennale pour travaux de construction non soumis à l’assurance obligatoire en cas d'atteinte à la solidité (art 2.3)</td><td colspan="2">Garantie non accordée</td></tr>
+    <tr class="sous-titre"><td colspan="2"><strong>Responsabilités connexes avant ou après réception</strong></td><td colspan="2"><strong>Montant unique pour l’ensemble des garanties, par sinistre et par année d’assurance</strong></td></tr>
+    <tr><td colspan="2">Bon fonctionnement des éléments d'équipements dissociables des ouvrages soumis à l'assurance obligatoire (art 2.5) – Dommages matériels intermédiaires affectant un ouvrage soumis à l'assurance obligatoire (art 2.6) – Dommages matériels aux existants par répercussion (art 2.7) – Dommages immatériels consécutifs (art 2.8)</td><td colspan="2"><strong>300 000 €</strong> par année</td></tr>
+    <tr class="sous-titre"><td colspan="2"><strong>Responsabilité civile pour préjudice causé aux tiers (art 2.10)</strong></td><td><strong>Montant par sinistre</strong></td><td><strong>Montant par année</strong></td></tr>
+    <tr><td colspan="2">Garanties Tous dommages confondus</td><td></td><td><strong>2 000 000 €</strong></td></tr>
+    <tr><td colspan="2">dont Dommages Immatériels Consécutifs ou non</td><td><strong>500 000 €</strong></td><td><strong>1 000 000 €</strong></td></tr>
+    <tr><td colspan="2">dont Erreur ou Omission avec ou sans désordre</td><td><strong>500 000 €</strong></td><td><strong>1 000 000 €</strong></td></tr>
+    <tr><td colspan="2">dont Atteinte à l’environnement accidentelle</td><td></td><td><strong>750 000 €</strong></td></tr>
+    <tr><td colspan="2">dont Faute inexcusable</td><td></td><td><strong>1 000 000 €</strong></td></tr>
+    <tr><td colspan="2">dont Défense recours</td><td></td><td><strong>20 000 €</strong></td></tr>
+    <tr><td colspan="2">Extensions spécifiques : frais financiers en cas de référé / Mission de pilotage / Mandataire commun</td><td colspan="2">Montant compris dans la limite tous dommages confondus</td></tr>
+    <tr><td colspan="2">Protection juridique</td><td colspan="2">Garantie non accordée</td></tr>
+    <tr><td colspan="2"><strong>Franchise par sinistre</strong></td><td colspan="2"><strong>{{ fmt.franchise }}</strong></td></tr>
+  </tbody>
+</table>
+<p class="note">Les montants de garantie et les franchises s'expriment en euros, au dernier indice de juillet connu à l'établissement des présentes pièces et conformément aux articles 3.3.4 et 3.4.2 des conditions générales, seront revalorisés au 1er juillet de chaque année. Après indexation, aucun montant de garantie prévu au présent contrat ne pourra excéder {{ fmt.plafond_indexation }}.<br>(1) Sans pouvoir excéder le montant du seuil de déclenchement du Contrat Collectif de Responsabilité Décennale (CCRD).</p>
+
+<p class="reserve">La présente attestation ne peut engager l’assureur au-delà des clauses et conditions du contrat auquel elle se réfère.</p>
+<p>Ce contrat n'a pas pour objet de garantir une activité de constructeur de maisons individuelles, avec ou sans fourniture de plans, telle que définie par la loi du 19 décembre 1990 et son décret d'application du 27 novembre 1991.</p>
+
+<p class="signature">Fait à <span data-variable="lieu_signature">{{ v.lieu_signature }}</span>, le <span data-variable="date_courrier">{{ v.date_courrier }}</span>.<br><strong><span data-variable="signataire_nom">{{ v.signataire_nom }}</span></strong><br><span data-variable="signataire_titre">{{ v.signataire_titre }}</span></p>

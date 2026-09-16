@@ -12,6 +12,9 @@ class TypeNotification(models.TextChoices):
     RELANCE = "RELANCE", "Relance"
     COMPLEMENTS_DEMANDES = "COMPLEMENTS_DEMANDES", "Compléments demandés"
     DEMANDE_TRAITEE = "DEMANDE_TRAITEE", "Demande traitée"
+    PROJET_ATTESTATION_SOUMIS = "PROJET_ATTESTATION_SOUMIS", "Projet d'attestation soumis"
+    PROJET_ATTESTATION_A_CORRIGER = "PROJET_ATTESTATION_A_CORRIGER", "Projet d'attestation à corriger"
+    ATTESTATION_DISPONIBLE = "ATTESTATION_DISPONIBLE", "Attestation disponible"
 
 
 class Notification(ModeleUUID):

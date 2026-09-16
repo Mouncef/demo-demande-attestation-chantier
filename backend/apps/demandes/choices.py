@@ -55,3 +55,8 @@ class ActionHistorique(models.TextChoices):
     ACCEPTATION = "ACCEPTATION", "Acceptation"
     REFUS = "REFUS", "Refus"
     RELANCE = "RELANCE", "Relance"
+    ATTESTATION_PROJET_VALIDEE = "ATTESTATION_PROJET_VALIDEE", "Projet d'attestation validé (ancien circuit)"
+    ATTESTATION_PROJET_SOUMISE = "ATTESTATION_PROJET_SOUMISE", "Projet d'attestation soumis au siège"
+    ATTESTATION_PROJET_A_CORRIGER = "ATTESTATION_PROJET_A_CORRIGER", "Projet d'attestation renvoyé pour correction"
+    ATTESTATION_PROJET_ROUVERTE = "ATTESTATION_PROJET_ROUVERTE", "Projet d'attestation repris par le distributeur"
+    ATTESTATION_DEFINITIVE_VALIDEE = "ATTESTATION_DEFINITIVE_VALIDEE", "Attestation définitive validée"

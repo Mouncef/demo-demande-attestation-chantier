@@ -30,6 +30,7 @@ class DemandeListeSerializer(serializers.ModelSerializer):
     niveau_risque = serializers.SerializerMethodField()
     actions_possibles = serializers.SerializerMethodField()
     prochaine_relance_possible = serializers.SerializerMethodField()
+    etat_attestation = serializers.SerializerMethodField()
 
     class Meta:
         model = Demande
@@ -51,6 +52,7 @@ class DemandeListeSerializer(serializers.ModelSerializer):
             "updated_at",
             "actions_possibles",
             "prochaine_relance_possible",
+            "etat_attestation",
         ]
         read_only_fields = fields
 
@@ -63,6 +65,20 @@ class DemandeListeSerializer(serializers.ModelSerializer):
     def get_prochaine_relance_possible(self, obj: Demande) -> str | None:
         prochaine = prochaine_relance_possible(obj)
         return prochaine.isoformat() if prochaine else None
+
+    def get_etat_attestation(self, obj: Demande) -> str:
+        """
+        État du circuit d'attestation (attestations préchargées) :
+        AUCUNE / PROJET_EN_COURS / PROJET_SOUMIS / PROJET_A_CORRIGER / DEFINITIVE (établie).
+        """
+        attestations = {a.kind: a for a in obj.attestations.all()}
+        definitive = attestations.get("DEFINITIVE")
+        if definitive and definitive.statut == "VALIDEE":
+            return "DEFINITIVE"
+        projet = attestations.get("PROJET")
+        if projet is None:
+            return "AUCUNE"
+        return {"SOUMISE": "PROJET_SOUMIS", "A_CORRIGER": "PROJET_A_CORRIGER"}.get(projet.statut, "PROJET_EN_COURS")
 
 
 class DemandeDetailSerializer(DemandeListeSerializer):

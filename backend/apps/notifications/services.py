@@ -43,9 +43,18 @@ def emails_siege() -> list[str]:
     return [u.email for u in destinataires_siege()]
 
 
-def lien_demande(demande: Demande) -> str:
-    """URL de la demande dans le frontend (emails)."""
-    return f"{settings.FRONTEND_URL}/demandes/{demande.id}"
+# Écran à ouvrir dans le frontend selon l'événement (paramètre d'URL lu par la page de détail).
+ONGLET_PAR_TYPE: dict[str, str] = {
+    TypeNotification.PROJET_ATTESTATION_SOUMIS: "projet",
+    TypeNotification.PROJET_ATTESTATION_A_CORRIGER: "attestation",
+    TypeNotification.ATTESTATION_DISPONIBLE: "definitive",
+}
+
+
+def lien_demande(demande: Demande, onglet: str | None = None) -> str:
+    """URL de la demande dans le frontend (emails), avec l'écran à ouvrir le cas échéant."""
+    url = f"{settings.FRONTEND_URL}/demandes/{demande.id}"
+    return f"{url}?vue={onglet}" if onglet else url
 
 
 def _titre_et_message(type_: str, demande: Demande, complement: str) -> tuple[str, str]:
@@ -73,6 +82,19 @@ def _titre_et_message(type_: str, demande: Demande, complement: str) -> tuple[st
             f"Demande {ref} traitée : {demande.get_decision_display() if demande.decision else ''}".strip(),
             f"La demande {ref} ({assure}) a été traitée par le siège."
             + (f" Motif : {complement}" if complement else ""),
+        ),
+        TypeNotification.PROJET_ATTESTATION_SOUMIS: (
+            f"Projet d'attestation soumis – {ref}",
+            f"Le distributeur {demande.distributeur.nom_affichage} a soumis un projet d'attestation pour la demande "
+            f"{ref} ({assure}) : à valider ou à rectifier pour établir l'attestation définitive.",
+        ),
+        TypeNotification.PROJET_ATTESTATION_A_CORRIGER: (
+            f"Projet d'attestation à corriger – {ref}",
+            f"Le siège demande une correction du projet d'attestation de la demande {ref} : {complement}",
+        ),
+        TypeNotification.ATTESTATION_DISPONIBLE: (
+            f"Attestation disponible – {ref}",
+            f"L'attestation définitive de la demande {ref} ({assure}) est disponible au téléchargement.",
         ),
     }
     return textes[type_]
@@ -115,6 +137,7 @@ def emettre(
     """
     titre, message = _titre_et_message(type_, demande, complement)
     destinataires = list(destinataires)
+    onglet = ONGLET_PAR_TYPE.get(type_)
     notifications = Notification.objects.bulk_create(
         [
             Notification(
@@ -128,6 +151,7 @@ def emettre(
                     "reference": demande.reference,
                     "statut": demande.statut,
                     "decision": demande.decision,
+                    "onglet": onglet,
                 },
             )
             for u in destinataires
@@ -139,7 +163,7 @@ def emettre(
         "titre": titre,
         "message": message,
         "reference": demande.reference,
-        "lien": lien_demande(demande),
+        "lien": lien_demande(demande, onglet),
         "assure": demande.fdr.assure_nom,
         "chantier": demande.fdr.chantier_nom,
     }
