@@ -69,6 +69,8 @@ INSTALLED_APPS = [
     "apps.comptes",
     "apps.demandes",
     "apps.pieces",
+    "apps.documents",
+    "apps.notifications",
 ]
 
 MIDDLEWARE = [
@@ -189,6 +191,7 @@ SPECTACULAR_SETTINGS = {
         {"name": "auth", "description": "Authentification JWT"},
         {"name": "demandes", "description": "Demandes d'attestation et FDR"},
         {"name": "pieces", "description": "Pièces justificatives"},
+        {"name": "notifications", "description": "Notifications in-app"},
         {"name": "referentiels", "description": "Valeurs de référence pour le formulaire dynamique"},
     ],
 }
@@ -225,11 +228,27 @@ FILE_UPLOAD_PERMISSIONS = 0o640
 FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o750
 
 # ---------------------------------------------------------------------------
+# Email
+# ---------------------------------------------------------------------------
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = env("EMAIL_HOST", "localhost")
+EMAIL_PORT = env_int("EMAIL_PORT", 1025)
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", False)
+EMAIL_TIMEOUT = 5
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "attestations-chantier@axa-demo.fr")
+FRONTEND_URL = env("FRONTEND_URL", "http://localhost:8080").rstrip("/")
+
+# ---------------------------------------------------------------------------
 # Paramètres métier
 # ---------------------------------------------------------------------------
 METIER = {
     # Seuil de coût total au-delà duquel le chantier est considéré comme « gros chantier » (strictement supérieur).
     "SEUIL_GROS_CHANTIER": "10000000.00",
+    # Relances : délai entre deux relances et délai après envoi avant la première.
+    "RELANCE_COOLDOWN_HOURS": env_int("RELANCE_COOLDOWN_HOURS", 24),
+    "RELANCE_DELAI_INITIAL_HOURS": env_int("RELANCE_DELAI_INITIAL_HOURS", 0),
     # Bornes de plausibilité des dates du chantier.
     "FDR_DATE_DEBUT_MAX_PAST_DAYS": 365,
     "FDR_DATE_DEBUT_MAX_FUTURE_DAYS": 3 * 365,
@@ -239,6 +258,8 @@ METIER = {
     "UPLOAD_MAX_PIECES_PAR_DEMANDE": 20,
     "UPLOAD_MAX_TOTAL_BYTES_PAR_DEMANDE": 100 * 1024 * 1024,
     "UPLOAD_ALLOW_OFFICE": env_bool("UPLOAD_ALLOW_OFFICE", False),
+    # Boîte fonctionnelle du siège (si vide : email à chaque utilisateur SIEGE actif).
+    "SIEGE_MAILBOX": env("SIEGE_MAILBOX", ""),
 }
 
 # Limite globale de taille des requêtes (multipart) alignée sur la taille max d'une pièce
@@ -261,5 +282,7 @@ LOGGING = {
         "django.request": {"level": "WARNING"},
         "apps": {"level": "INFO"},
         "securite": {"level": "WARNING"},
+        "weasyprint": {"level": "WARNING"},
+        "fontTools": {"level": "WARNING"},
     },
 }

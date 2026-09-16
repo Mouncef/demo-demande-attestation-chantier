@@ -1,0 +1,32 @@
+/* Feuille de style commune aux PDF (WeasyPrint) – charte AXA :
+   Core (#00008F, #FFFFFF, #FF1721), Tints (#E2EFFF, #6574F8, #0C0E45, #FFEAEA, #FF4E56, #750707, #E6E6E6, #999999, #0E0E0E),
+   titres en serif (Publico Headline, substitut Source Serif 4 / DejaVu Serif), texte Source Sans / Liberation Sans. */
+@page {
+  size: A4;
+  margin: 18mm 16mm 22mm 16mm;
+  @bottom-right {
+    content: "Page " counter(page) " / " counter(pages);
+    font-size: 7.5pt;
+    color: #0c0e45;
+  }
+}
+body { font-family: "Source Sans 3", "Source Sans Pro", "Liberation Sans", "DejaVu Sans", Arial, sans-serif; font-size: 10pt; color: #0e0e0e; line-height: 1.4; text-align: left; }
+header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #00008f; padding-bottom: 8px; margin-bottom: 14px; }
+header img { height: 44px; }
+header .assureur { font-size: 8pt; color: #0c0e45; text-align: right; }
+header .assureur strong { color: #00008f; font-size: 10pt; }
+h1, h2 { font-family: "Publico Headline", "Source Serif 4", "DejaVu Serif", "Liberation Serif", Georgia, serif; font-style: normal; text-transform: none; }
+h1 { color: #00008f; font-size: 16pt; font-weight: 300; border-bottom: 2px solid #ff1721; padding-bottom: 4px; margin: 10px 0 8px; }
+h2 { color: #00008f; font-size: 12pt; font-weight: 700; margin: 14px 0 6px; }
+table { width: 100%; border-collapse: collapse; margin: 6px 0; }
+td, th { border: 1px solid #e6e6e6; padding: 5px 7px; vertical-align: top; }
+td:first-child { width: 38%; color: #0c0e45; background: #e2efff; }
+th { background: #e2efff; color: #00008f; text-align: left; font-weight: 600; border-bottom: 2px solid #00008f; }
+.reserve { border: 1px solid #00008f; background: #e2efff; color: #00008f; padding: 8px 10px; font-size: 9.5pt; margin-top: 14px; }
+.watermark { position: fixed; top: 38%; left: 8%; font-size: 80pt; font-weight: 700; color: #ffeaea; transform: rotate(-30deg); z-index: -1; font-family: "Source Sans 3", "Liberation Sans", sans-serif; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 2px; font-size: 8.5pt; font-weight: 600; }
+.badge.faible { background: #58c645; color: #00008f; } .badge.modere { background: #fff06c; color: #00008f; } .badge.eleve { background: #750707; color: #ffffff; }
+.muted { color: #0c0e45; font-size: 8.5pt; }
+footer { position: fixed; bottom: -14mm; left: 0; right: 30mm; font-size: 7pt; color: #999999; text-align: left; }
+span[data-variable] { border-bottom: 1px dotted #6574f8; }
+ul.pieces li { margin-bottom: 2px; }

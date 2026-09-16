@@ -1,0 +1,9 @@
+{{ titre }}
+
+{{ message }}
+
+Référence : {{ reference }}{% if assure %} – Assuré : {{ assure }}{% endif %}{% if chantier %} – Chantier : {{ chantier }}{% endif %}
+Consulter la demande : {{ lien }}
+
+--
+Plateforme de gestion des attestations de chantier – message automatique, merci de ne pas y répondre.

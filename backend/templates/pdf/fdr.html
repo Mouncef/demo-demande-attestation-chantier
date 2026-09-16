@@ -1,0 +1,72 @@
+{% comment %}PDF du Formulaire de Déclaration du Risque, généré à chaque envoi au siège.{% endcomment %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>FDR {{ demande.reference }}</title>
+<style>{% include "pdf/base.css" %}</style>
+</head>
+<body>
+<header>
+  <img src="{{ logo }}" alt="AXA">
+  <div class="assureur">
+    <strong>Formulaire de Déclaration du Risque</strong><br>
+    Demande {{ demande.reference }} – envoi n°{{ demande.nb_soumissions }}<br>
+    Édité le {{ date_edition }}
+  </div>
+</header>
+
+<h1>Demande d'attestation de chantier</h1>
+<p class="muted">Distributeur : {{ distributeur.nom_affichage }}{% if distributeur.organisation %} – {{ distributeur.organisation }}{% endif %}{% if distributeur.code_distributeur %} (code {{ distributeur.code_distributeur }}){% endif %}</p>
+
+<h2>1. L'assuré</h2>
+<table>
+  <tr><td>Nom / raison sociale</td><td>{{ fdr.assure_nom|default:"—" }}</td></tr>
+  <tr><td>Adresse</td><td>{{ fdr.assure_adresse|default:"—" }}{% if fdr.assure_code_postal or fdr.assure_ville %}<br>{{ fdr.assure_code_postal|default:"" }} {{ fdr.assure_ville|default:"" }}{% endif %}</td></tr>
+  <tr><td>SIRET</td><td>{{ fdr.assure_siret|default:"—" }}</td></tr>
+  <tr><td>Numéro de contrat</td><td>{{ fdr.numero_contrat|default:"—" }}{% if fdr.reference_client %} – référence client {{ fdr.reference_client }}{% endif %}</td></tr>
+</table>
+
+<h2>2. Le chantier</h2>
+<table>
+  <tr><td>Nom du chantier</td><td>{{ fdr.chantier_nom|default:"—" }}</td></tr>
+  <tr><td>Ville</td><td>{{ fdr.chantier_ville|default:"—" }}</td></tr>
+  <tr><td>Type</td><td>{{ fdr.get_type_chantier_display|default:"—" }}{% if fdr.type_chantier == "RENOVATION" %} – modification de structure : {% if fdr.modification_structure %}oui{% else %}non{% endif %}{% endif %}</td></tr>
+  <tr><td>Usage</td><td>{{ fdr.get_usage_display|default:"—" }}{% if fdr.usage_autre_precision %} : {{ fdr.usage_autre_precision }}{% endif %}</td></tr>
+  <tr><td>Chantier atypique</td><td>{% if fdr.chantier_atypique %}Oui{% elif fdr.chantier_atypique is False %}Non{% else %}—{% endif %}</td></tr>
+  <tr><td>Période</td><td>du {{ date_debut }} au {{ date_fin }}</td></tr>
+  <tr><td>Coût total</td><td>{{ cout_total }} €</td></tr>
+</table>
+
+<h2>3. L'intervention</h2>
+<table>
+  <tr><td>Description des travaux</td><td>{{ fdr.description_travaux|default:"—"|linebreaksbr }}</td></tr>
+  <tr><td>Montant de la prestation</td><td>{{ montant_prestation }} €</td></tr>
+  <tr><td>Type d'intervention</td><td>{{ fdr.get_type_intervention_display|default:"—" }}{% if fdr.entreprise_principale_nom %} (entreprise principale : {{ fdr.entreprise_principale_nom }}){% endif %}</td></tr>
+  <tr><td>Activité couverte par le contrat</td><td>{% if fdr.activite_couverte %}Oui{% elif fdr.activite_couverte is False %}Non – {{ fdr.activite_non_couverte_precision }}{% else %}—{% endif %}</td></tr>
+  <tr><td>Travaux standards</td><td>{% if fdr.travaux_standards %}Oui{% elif fdr.travaux_standards is False %}Non{% else %}—{% endif %}</td></tr>
+</table>
+
+<h2>4. Évaluation du risque (indicateurs simulés)</h2>
+<p>Niveau : <span class="badge {{ scoring.niveau|lower }}">{% if scoring.niveau == "FAIBLE" %}Faible{% elif scoring.niveau == "MODERE" %}Modéré{% else %}Élevé{% endif %}</span> – score {{ scoring.score }}/100</p>
+<table>
+  <tr><th>Indicateur</th><th>Détail</th><th style="width:12%">Points</th></tr>
+  {% for i in scoring.indicateurs %}<tr><td>{{ i.libelle }}</td><td>{{ i.detail }}</td><td>+{{ i.points }}</td></tr>{% endfor %}
+</table>
+<p class="muted">{{ scoring.synthese }}</p>
+
+<h2>5. Pièces justificatives</h2>
+<ul class="pieces">
+{% for e in completude.exigences %}
+  <li>{{ e.libelle }} ({% if e.niveau == "REQUIS" %}requise{% else %}recommandée{% endif %} – {{ e.raison }}) : {% if e.satisfait %}{% for p in e.pieces %}{{ p.nom_fichier|default:p.nom_original }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}<strong>manquante</strong>{% endif %}</li>
+{% empty %}
+  <li>Aucune pièce requise pour ce dossier.</li>
+{% endfor %}
+{% for p in completude.pieces_hors_exigence %}<li>{{ p.libelle }} (facultative) : {{ p.nom_fichier|default:p.nom_original }}</li>{% endfor %}
+</ul>
+
+{% if demande.commentaire_distributeur %}<h2>6. Commentaire du distributeur</h2><p>{{ demande.commentaire_distributeur|linebreaksbr }}</p>{% endif %}
+
+<footer>Document généré automatiquement par la plateforme de gestion des attestations de chantier – données déclaratives sous la responsabilité de l'assuré.</footer>
+</body>
+</html>

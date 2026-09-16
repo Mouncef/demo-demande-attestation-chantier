@@ -18,6 +18,7 @@ docker compose up --build
 * Application : http://localhost:8080
 * API : http://localhost:8080/api/docs/ (Swagger UI)
 * Sonde de santé : http://localhost:8080/health/
+* Boîte mail de test (Mailpit) : http://localhost:8025
 
 Le port peut être changé avec `FRONTEND_PORT` dans `.env`.
 

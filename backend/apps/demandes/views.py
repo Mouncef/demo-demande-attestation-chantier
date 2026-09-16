@@ -8,6 +8,8 @@ Les contrôles d'état sont délégués aux services (409).
 
 from __future__ import annotations
 
+from django.http import FileResponse
+from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
@@ -17,24 +19,34 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.core.exceptions import ConflitVersion
-from apps.core.permissions import EstDistributeur
+from apps.core.permissions import EstDistributeur, EstSiege
 from apps.pieces.catalogue import CATALOGUE
 
 from .choices import Decision, Statut, TypeChantier, TypeIntervention, Usage
 from .filters import DemandeFilter
 from .models import Demande
 from .serializers.demande import (
+    AccepterSerializer,
+    CommentaireSerializer,
+    ComplementsSerializer,
     DemandeDetailSerializer,
     DemandeListeSerializer,
+    EnvoyerSerializer,
     FDRPatchSerializer,
     HistoriqueSerializer,
+    RefuserSerializer,
+    RelancerSerializer,
+    RelanceSerializer,
+    SoumissionSerializer,
 )
 from .serializers.fdr import FDRSerializer, valider_pour_envoi
+from .services import relance as service_relance
 from .services import workflow
 from .services.exigences import calculer_completude
 from .services.scoring import calculer_scoring
 
-ACTIONS_DISTRIBUTEUR = {"create", "destroy", "fdr"}
+ACTIONS_DISTRIBUTEUR = {"create", "destroy", "fdr", "envoyer", "relancer"}
+ACTIONS_SIEGE = {"demander_complements", "accepter", "refuser"}
 
 
 @extend_schema(tags=["demandes"])
@@ -54,6 +66,8 @@ class DemandeViewSet(
     def get_permissions(self):  # type: ignore[override]
         if self.action in ACTIONS_DISTRIBUTEUR:
             return [IsAuthenticated(), EstDistributeur()]
+        if self.action in ACTIONS_SIEGE:
+            return [IsAuthenticated(), EstSiege()]
         return [IsAuthenticated()]
 
     def get_queryset(self):  # type: ignore[override]
@@ -144,12 +158,141 @@ class DemandeViewSet(
         demande = self.get_object()
         return Response(calculer_scoring(demande.fdr, workflow.pieces_actives(demande)).to_dict())
 
+    # ------------------------------------------------------------------ transitions
+    def _reponse_detail(self, demande: Demande) -> Response:
+        demande = self.get_queryset().get(pk=demande.pk)
+        return Response(DemandeDetailSerializer(demande, context=self.get_serializer_context()).data)
+
+    @extend_schema(
+        summary="Envoyer / renvoyer la demande au siège", request=EnvoyerSerializer, responses=DemandeDetailSerializer
+    )
+    @action(detail=True, methods=["post"])
+    def envoyer(self, request: Request, pk=None) -> Response:
+        demande = self.get_object()
+        serializer = EnvoyerSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return self._reponse_detail(
+            workflow.envoyer(demande.pk, request.user, serializer.validated_data.get("commentaire"))
+        )
+
+    @extend_schema(
+        summary="Relancer le siège par email (délai minimal 24 h)",
+        request=RelancerSerializer,
+        responses=RelanceSerializer,
+    )
+    @action(detail=True, methods=["post"])
+    def relancer(self, request: Request, pk=None) -> Response:
+        demande = self.get_object()
+        serializer = RelancerSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        relance = service_relance.relancer(demande.pk, request.user, serializer.validated_data.get("message", ""))
+        return Response(RelanceSerializer(relance).data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        summary="Siège : demander des éléments complémentaires",
+        request=ComplementsSerializer,
+        responses=DemandeDetailSerializer,
+    )
+    @action(detail=True, methods=["post"], url_path="demander-complements")
+    def demander_complements(self, request: Request, pk=None) -> Response:
+        demande = self.get_object()
+        serializer = ComplementsSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return self._reponse_detail(
+            workflow.demander_complements(demande.pk, request.user, serializer.validated_data["message"])
+        )
+
+    @extend_schema(summary="Siège : accepter la demande", request=AccepterSerializer, responses=DemandeDetailSerializer)
+    @action(detail=True, methods=["post"])
+    def accepter(self, request: Request, pk=None) -> Response:
+        demande = self.get_object()
+        serializer = AccepterSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return self._reponse_detail(
+            workflow.accepter(demande.pk, request.user, serializer.validated_data.get("commentaire", ""))
+        )
+
+    @extend_schema(
+        summary="Siège : refuser la demande (motif obligatoire)",
+        request=RefuserSerializer,
+        responses=DemandeDetailSerializer,
+    )
+    @action(detail=True, methods=["post"])
+    def refuser(self, request: Request, pk=None) -> Response:
+        demande = self.get_object()
+        serializer = RefuserSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return self._reponse_detail(
+            workflow.refuser(
+                demande.pk,
+                request.user,
+                serializer.validated_data["motif"],
+                serializer.validated_data.get("commentaire", ""),
+            )
+        )
+
+    @extend_schema(
+        summary="Commentaire (distributeur si éditable, siège si en cours)",
+        request=CommentaireSerializer,
+        responses=DemandeDetailSerializer,
+    )
+    @action(detail=True, methods=["patch"])
+    def commentaire(self, request: Request, pk=None) -> Response:
+        from apps.core.exceptions import TransitionInvalide
+
+        demande = self.get_object()
+        serializer = CommentaireSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        if request.user.est_siege:
+            if demande.statut != Statut.EN_COURS:
+                raise TransitionInvalide(
+                    "Le siège ne peut commenter qu'une demande en cours.", statut_actuel=demande.statut
+                )
+            demande.commentaire_siege = serializer.validated_data["commentaire"]
+            demande.save(update_fields=["commentaire_siege", "updated_at"])
+        else:
+            if not demande.est_editable:
+                raise TransitionInvalide(
+                    "Le commentaire n'est modifiable qu'en brouillon.", statut_actuel=demande.statut
+                )
+            demande.commentaire_distributeur = serializer.validated_data["commentaire"]
+            demande.save(update_fields=["commentaire_distributeur", "updated_at"])
+        return self._reponse_detail(demande)
+
     # ------------------------------------------------------------------ sous-ressources
     @extend_schema(summary="Historique des actions", responses=HistoriqueSerializer(many=True))
     @action(detail=True, methods=["get"])
     def historique(self, request: Request, pk=None) -> Response:
         demande = self.get_object()
         return Response(HistoriqueSerializer(demande.historique.select_related("acteur"), many=True).data)
+
+    @extend_schema(summary="Historique des relances", responses=RelanceSerializer(many=True))
+    @action(detail=True, methods=["get"])
+    def relances(self, request: Request, pk=None) -> Response:
+        demande = self.get_object()
+        return Response(RelanceSerializer(demande.relances.select_related("envoyee_par"), many=True).data)
+
+    @extend_schema(summary="Soumissions successives (snapshots)", responses=SoumissionSerializer(many=True))
+    @action(detail=True, methods=["get"])
+    def soumissions(self, request: Request, pk=None) -> Response:
+        demande = self.get_object()
+        return Response(SoumissionSerializer(demande.soumissions.all(), many=True).data)
+
+    @extend_schema(
+        summary="PDF du FDR d'une soumission", responses={200: OpenApiResponse(description="application/pdf")}
+    )
+    @action(detail=True, methods=["get"], url_path=r"soumissions/(?P<numero>\d+)/pdf")
+    def soumission_pdf(self, request: Request, pk=None, numero: str = "1") -> FileResponse:
+        demande = self.get_object()
+        soumission = get_object_or_404(demande.soumissions, numero=int(numero))
+        reponse = FileResponse(
+            soumission.pdf.open("rb"),
+            content_type="application/pdf",
+            as_attachment=True,
+            filename=f"FDR-{demande.reference}-{soumission.numero}.pdf",
+        )
+        reponse["X-Content-Type-Options"] = "nosniff"
+        return reponse
 
 
 class ReferentielsView(APIView):
@@ -177,6 +320,7 @@ class ReferentielsView(APIView):
                     {"code": d.code, "libelle": d.libelle, "description": d.description} for d in CATALOGUE
                 ],
                 "seuil_gros_chantier": settings.METIER["SEUIL_GROS_CHANTIER"],
+                "relance_cooldown_hours": settings.METIER["RELANCE_COOLDOWN_HOURS"],
                 "upload": {
                     "max_bytes": settings.METIER["UPLOAD_MAX_BYTES"],
                     "extensions": [".pdf", ".jpg", ".jpeg", ".png"]

@@ -137,3 +137,16 @@ def ajouter_piece(demande: Demande, code: str, user: User, nom: str = "piece.pdf
 @pytest.fixture
 def demande_brouillon(distributeur) -> Demande:
     return creer_demande(distributeur)
+
+
+@pytest.fixture
+def demande_en_cours(distributeur) -> Demande:
+    demande = creer_demande(distributeur)
+    return workflow.envoyer(demande.pk, distributeur)
+
+
+@pytest.fixture
+def demande_acceptee(distributeur, siege) -> Demande:
+    demande = creer_demande(distributeur)
+    workflow.envoyer(demande.pk, distributeur)
+    return workflow.accepter(demande.pk, siege)

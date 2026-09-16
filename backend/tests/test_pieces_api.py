@@ -77,7 +77,7 @@ def test_fichier_trop_volumineux(api_distributeur, demande_brouillon, settings):
     settings.METIER["UPLOAD_MAX_BYTES"] = 10 * 1024 * 1024
 
 
-def test_droits_pieces(api_siege, api_autre_distributeur, demande_brouillon):
+def test_droits_pieces(api_siege, api_autre_distributeur, api_distributeur, demande_brouillon, demande_en_cours):
     fichier = SimpleUploadedFile("a.pdf", PDF_MINIMAL, content_type="application/pdf")
     assert (
         api_siege.post(
@@ -91,6 +91,13 @@ def test_droits_pieces(api_siege, api_autre_distributeur, demande_brouillon):
             url(demande_brouillon), {"fichier": fichier, "type_piece": "AUTRE"}, format="multipart"
         ).status_code
         == 404
+    )
+    fichier = SimpleUploadedFile("a.pdf", PDF_MINIMAL, content_type="application/pdf")
+    assert (
+        api_distributeur.post(
+            url(demande_en_cours), {"fichier": fichier, "type_piece": "AUTRE"}, format="multipart"
+        ).status_code
+        == 409
     )
 
 

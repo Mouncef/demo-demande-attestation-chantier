@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>{{ titre }}</title></head>
+<body style="margin:0;padding:0;background:#e6e6e6;font-family:'Source Sans 3','Source Sans Pro',Arial,sans-serif;color:#0e0e0e;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#e6e6e6;padding:24px 0;">
+    <tr><td align="center">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-top:6px solid #00008F;">
+        <tr><td style="padding:24px 32px 8px;">
+          <img src="cid:logo-axa" alt="AXA" width="44" height="44" style="display:inline-block;vertical-align:middle;">
+          <span style="margin-left:12px;color:#00008F;font-size:14px;font-weight:600;">Attestations de chantier</span>
+        </td></tr>
+        <tr><td style="padding:8px 32px;"><h1 style="font-family:'Publico Headline','Source Serif 4',Georgia,serif;font-weight:300;font-size:22px;color:#00008F;margin:0 0 12px;">{{ titre }}</h1>
+          <p style="font-size:15px;line-height:1.5;margin:0 0 16px;">{{ message }}</p>
+          <p style="font-size:13px;color:#0c0e45;margin:0 0 20px;">Référence : <strong>{{ reference }}</strong>{% if assure %} · Assuré : {{ assure }}{% endif %}{% if chantier %} · Chantier : {{ chantier }}{% endif %}</p>
+          <a href="{{ lien }}" style="display:inline-block;background:#00008F;color:#ffffff;text-decoration:none;padding:12px 20px;font-weight:600;font-size:14px;">Consulter la demande</a>
+        </td></tr>
+        <tr><td style="padding:24px 32px;font-size:11px;color:#0c0e45;border-top:1px solid #e6e6e6;">Message automatique de la plateforme de gestion des attestations de chantier – merci de ne pas y répondre.</td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>
