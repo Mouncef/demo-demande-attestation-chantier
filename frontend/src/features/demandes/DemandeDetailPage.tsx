@@ -1,6 +1,6 @@
 // Détail d'une demande : parcours en étapes pour le distributeur (FDR → risque & pièces →
-// validation & envoi), vue instruction pour le siège, historique et soumissions.
-import { useEffect, useState } from 'react';
+// validation & envoi → attestation), vue instruction pour le siège, historique et soumissions.
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -36,7 +36,31 @@ import {
 } from '@/design-system/components';
 import { RelanceButton } from './RelanceButton';
 
-type Etape = 'fdr' | 'pieces' | 'validation' | 'historique';
+// L'éditeur riche (TipTap) est chargé à la demande pour alléger le bundle initial.
+const AttestationStepLazy = lazy(() =>
+  import('@/features/attestation/AttestationStep').then((m) => ({ default: m.AttestationStep })),
+);
+function AttestationStep(props: React.ComponentProps<typeof AttestationStepLazy>) {
+  return (
+    <Suspense fallback={<Spinner label="Chargement de l'éditeur…" />}>
+      <AttestationStepLazy {...props} />
+    </Suspense>
+  );
+}
+
+type Etape = 'fdr' | 'pieces' | 'validation' | 'attestation' | 'definitive' | 'historique';
+
+/** Écran ciblé par une notification (`?vue=…`) → étape du parcours distributeur / onglet siège. */
+const VUE_VERS_ETAPE: Record<string, Etape> = {
+  projet: 'attestation',
+  attestation: 'attestation',
+  definitive: 'definitive',
+};
+const VUE_VERS_ONGLET: Record<string, string> = {
+  projet: 'projet',
+  attestation: 'projet',
+  definitive: 'definitive',
+};
 
 export function DemandeDetailPage() {
   const { id = '' } = useParams();
@@ -92,6 +116,7 @@ function VueDistributeur({ demande }: { demande: DemandeDetail }) {
   const fdrValide = !editable || Boolean(completude?.fdr_valide);
   const dossierComplet = !editable || Boolean(completude?.complet);
   const envoyee = demande.nb_soumissions > 0;
+  const acceptee = demande.decision === 'ACCEPTEE';
   const acces: Record<Etape, { ok: boolean; motif: string }> = {
     fdr: { ok: true, motif: '' },
     pieces: { ok: fdrValide, motif: 'Complétez et validez le formulaire FDR avant de passer aux pièces.' },
@@ -99,11 +124,26 @@ function VueDistributeur({ demande }: { demande: DemandeDetail }) {
       ok: fdrValide && dossierComplet,
       motif: `Déposez toutes les pièces requises avant de continuer${completude?.manquants.length ? ` (${completude.manquants.length} manquante(s))` : ''}.`,
     },
+    attestation: {
+      ok: acceptee,
+      motif: "Le projet d'attestation se prépare une fois la demande acceptée par le siège.",
+    },
+    definitive: {
+      ok: acceptee,
+      motif: "L'attestation définitive n'est disponible qu'une fois la demande acceptée.",
+    },
     historique: { ok: true, motif: '' },
   };
 
-  const etapeParDefaut: Etape = editable ? 'fdr' : 'validation';
-  const etapeDemandee = (params.get('etape') as Etape) || etapeParDefaut;
+  const etapeParDefaut: Etape = acceptee
+    ? demande.etat_attestation === 'DEFINITIVE'
+      ? 'definitive'
+      : 'attestation'
+    : editable
+      ? 'fdr'
+      : 'validation';
+  const vue = params.get('vue');
+  const etapeDemandee = (params.get('etape') as Etape) || (vue && VUE_VERS_ETAPE[vue]) || etapeParDefaut;
   const etape: Etape = acces[etapeDemandee]?.ok ? etapeDemandee : 'fdr';
   const allerDirect = (e: string) => setParams({ etape: e });
   /** Navigation contrôlée : refuse (avec explication) une étape dont les prérequis ne sont pas remplis. */
@@ -134,6 +174,21 @@ function VueDistributeur({ demande }: { demande: DemandeDetail }) {
       desactive: !acces.pieces.ok,
     },
     { cle: 'validation', libelle: 'Validation & envoi', termine: envoyee, desactive: !acces.validation.ok },
+    {
+      cle: 'attestation',
+      libelle: "Projet d'attestation",
+      termine: demande.etat_attestation === 'PROJET_SOUMIS' || demande.etat_attestation === 'DEFINITIVE',
+      desactive: !acces.attestation.ok,
+    },
+    ...(acceptee
+      ? [
+          {
+            cle: 'definitive',
+            libelle: 'Attestation définitive',
+            termine: demande.etat_attestation === 'DEFINITIVE',
+          },
+        ]
+      : []),
     { cle: 'historique', libelle: 'Historique' },
   ];
 
@@ -167,7 +222,7 @@ function VueDistributeur({ demande }: { demande: DemandeDetail }) {
       {demande.statut === 'EN_COURS' && (
         <Alert type="info">
           Demande en cours d'instruction par le siège depuis le {formatDateHeure(demande.submitted_at)} (envoi
-          n°{demande.nb_soumissions}).
+          n°{demande.nb_soumissions}). Vous pouvez préparer un projet d'attestation en attendant.
         </Alert>
       )}
       {demande.statut === 'TRAITE' && demande.decision === 'REFUSEE' && (
@@ -176,8 +231,19 @@ function VueDistributeur({ demande }: { demande: DemandeDetail }) {
         </Alert>
       )}
       {demande.statut === 'TRAITE' && demande.decision === 'ACCEPTEE' && (
-        <Alert type="success">
-          <strong>Demande acceptée par le siège.</strong>
+        <Alert type={demande.etat_attestation === 'PROJET_A_CORRIGER' ? 'warning' : 'success'}>
+          <strong>Demande acceptée par le siège.</strong>{' '}
+          {
+            {
+              AUCUNE: 'Préparez et soumettez votre projet d’attestation au siège.',
+              PROJET_EN_COURS:
+                'Votre projet d’attestation est en préparation : soumettez-le au siège lorsqu’il est prêt.',
+              PROJET_SOUMIS:
+                'Votre projet d’attestation est soumis : le siège établit l’attestation définitive.',
+              PROJET_A_CORRIGER: 'Le siège vous a renvoyé le projet d’attestation pour correction.',
+              DEFINITIVE: 'L’attestation définitive est disponible au téléchargement.',
+            }[demande.etat_attestation]
+          }
           {demande.commentaire_siege && (
             <div className="small">Commentaire du siège : {demande.commentaire_siege}</div>
           )}
@@ -206,11 +272,15 @@ function VueDistributeur({ demande }: { demande: DemandeDetail }) {
         <ValidationStep
           demande={demande}
           lectureSeule={!peut('envoyer')}
-          onEnvoye={() => allerDirect('historique')}
+          onEnvoye={() => allerDirect('attestation')}
           // Depuis le récapitulatif, « corriger le FDR » ouvre le formulaire avec les erreurs signalées.
           onAllerEtape={(e) => (e === 'fdr' ? setParams({ etape: 'fdr', signaler: '1' }) : allerDirect(e))}
         />
       )}
+      {etape === 'attestation' && (
+        <AttestationStep demande={demande} kind="projet" peutEditer={peut('editer_projet_attestation')} />
+      )}
+      {etape === 'definitive' && <AttestationStep demande={demande} kind="definitive" peutEditer={false} />}
       {etape === 'historique' && <HistoriquePanel demande={demande} />}
       {etape !== 'fdr' && <StepNav onPrecedent={precedent} onSuivant={suivant} />}
 
@@ -252,15 +322,26 @@ function VueDistributeur({ demande }: { demande: DemandeDetail }) {
 
 function VueSiege({ demande }: { demande: DemandeDetail }) {
   const [params, setParams] = useSearchParams();
-  const onglet = params.get('onglet') ?? 'dossier';
+  const vue = params.get('vue');
+  // Un projet soumis attend le siège : on l'ouvre en priorité.
+  const ongletParDefaut = demande.etat_attestation === 'PROJET_SOUMIS' ? 'projet' : 'dossier';
+  const onglet = params.get('onglet') ?? (vue && VUE_VERS_ONGLET[vue]) ?? ongletParDefaut;
   const onglets = [
     { cle: 'dossier', libelle: 'Dossier (FDR)' },
     { cle: 'pieces', libelle: 'Risque & pièces' },
+    { cle: 'projet', libelle: "Projet d'attestation" },
+    ...(demande.decision === 'ACCEPTEE' ? [{ cle: 'definitive', libelle: 'Attestation définitive' }] : []),
     { cle: 'historique', libelle: 'Historique' },
   ];
   return (
     <>
       <EnTete demande={demande} />
+      {demande.etat_attestation === 'PROJET_SOUMIS' && (
+        <Alert type="warning">
+          <strong>Projet d'attestation soumis par le distributeur :</strong> à valider ou à rectifier pour
+          établir l'attestation définitive (onglet « Projet d'attestation »).
+        </Alert>
+      )}
       <div className="grid-2 mb-2" style={{ gridTemplateColumns: 'minmax(0, 2fr) minmax(300px, 1fr)' }}>
         <TraitementPanel demande={demande} />
         <Card titre="Synthèse" variante="plain">
@@ -301,6 +382,21 @@ function VueSiege({ demande }: { demande: DemandeDetail }) {
       <Tabs onglets={onglets} actif={onglet} onChange={(o) => setParams({ onglet: o })} />
       {onglet === 'dossier' && <FdrForm demande={demande} lectureSeule />}
       {onglet === 'pieces' && <RisquePiecesStep demande={demande} lectureSeule />}
+      {onglet === 'projet' && (
+        <AttestationStep
+          demande={demande}
+          kind="projet"
+          peutEditer={false}
+          onEtablirDefinitive={() => setParams({ onglet: 'definitive' })}
+        />
+      )}
+      {onglet === 'definitive' && (
+        <AttestationStep
+          demande={demande}
+          kind="definitive"
+          peutEditer={demande.actions_possibles.includes('editer_attestation_definitive')}
+        />
+      )}
       {onglet === 'historique' && <HistoriquePanel demande={demande} />}
     </>
   );

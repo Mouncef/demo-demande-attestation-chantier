@@ -1,12 +1,13 @@
-// Écran 1 : liste des demandes avec filtres statut / décision, recherche, tri, pagination, relance.
+// Écran 1 : liste des demandes avec filtres statut / décision, recherche, tri, relance.
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCreerDemande, useDemandes, useSupprimerDemande } from '@/api/demandes';
 import type { Decision, DemandeListe, Statut } from '@/api/types';
 import { useAuth } from '@/features/auth/AuthContext';
 import { formatDate, formatMontant } from '@/lib/format';
-import { LIBELLES_DECISION, LIBELLES_STATUT } from '@/lib/libelles';
+import { LIBELLES_DECISION, LIBELLES_ETAT_ATTESTATION, LIBELLES_STATUT } from '@/lib/libelles';
 import {
+  Badge,
   BadgeDecision,
   BadgeNiveau,
   BadgeStatut,
@@ -37,6 +38,7 @@ export function DemandesListPage() {
   const [page, setPage] = useState(1);
   // Lignes par page : 5 par défaut, préférence mémorisée dans le navigateur.
   const [taille, setTaille] = useState(() => lireTaillePage());
+  const [projetsSoumis, setProjetsSoumis] = useState(false);
   const { data, isLoading, isError } = useDemandes({
     statut: statuts,
     decision: decisions,
@@ -44,6 +46,7 @@ export function DemandesListPage() {
     ordering: tri,
     page,
     pageSize: taille,
+    projetSoumis: projetsSoumis,
   });
   const creer = useCreerDemande();
   const supprimer = useSupprimerDemande();
@@ -118,6 +121,26 @@ export function DemandesListPage() {
               ))}
             </div>
           </div>
+          {utilisateur?.role === 'SIEGE' && (
+            <div>
+              <div className="small muted" style={{ marginBottom: 4 }}>
+                Attestation
+              </div>
+              <div className="chips">
+                <button
+                  type="button"
+                  className="chip"
+                  aria-pressed={projetsSoumis}
+                  onClick={() => {
+                    setProjetsSoumis((v) => !v);
+                    setPage(1);
+                  }}
+                >
+                  Projets soumis à traiter
+                </button>
+              </div>
+            </div>
+          )}
           <div className="grow" style={{ minWidth: 220 }}>
             <div className="small muted" style={{ marginBottom: 4 }}>
               Recherche
@@ -195,6 +218,23 @@ export function DemandesListPage() {
                     </td>
                     <td>
                       <BadgeDecision decision={d.decision} />
+                      {d.decision === 'ACCEPTEE' && d.etat_attestation !== 'AUCUNE' && (
+                        <div style={{ marginTop: 4 }}>
+                          <Badge
+                            couleur={
+                              d.etat_attestation === 'DEFINITIVE'
+                                ? 'green'
+                                : d.etat_attestation === 'PROJET_A_CORRIGER'
+                                  ? 'red'
+                                  : d.etat_attestation === 'PROJET_SOUMIS'
+                                    ? 'orange'
+                                    : 'blue'
+                            }
+                          >
+                            {LIBELLES_ETAT_ATTESTATION[d.etat_attestation]}
+                          </Badge>
+                        </div>
+                      )}
                     </td>
                     <td>{formatDate(d.submitted_at)}</td>
                     <td onClick={(e) => e.stopPropagation()}>

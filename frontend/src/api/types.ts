@@ -7,6 +7,10 @@ export type NiveauRisque = 'FAIBLE' | 'MODERE' | 'ELEVE';
 export type TypeChantier = 'CONSTRUCTION_NEUVE' | 'RENOVATION';
 export type Usage = 'HABITATION' | 'BUREAU' | 'COMMERCE' | 'AUTRE';
 export type TypeIntervention = 'ENTREPRISE_PRINCIPALE' | 'SOUS_TRAITANT';
+export type KindAttestation = 'PROJET' | 'DEFINITIVE';
+export type EtatAttestation =
+  'AUCUNE' | 'PROJET_EN_COURS' | 'PROJET_SOUMIS' | 'PROJET_A_CORRIGER' | 'DEFINITIVE';
+export type StatutAttestation = 'EN_EDITION' | 'SOUMISE' | 'A_CORRIGER' | 'VALIDEE';
 
 export interface Utilisateur {
   id: number;
@@ -68,10 +72,14 @@ export type ActionPossible =
   | 'envoyer'
   | 'supprimer'
   | 'relancer'
+  | 'editer_projet_attestation'
   | 'accepter'
   | 'refuser'
   | 'demander_complements'
-  | 'commenter';
+  | 'commenter'
+  | 'editer_attestation_definitive'
+  | 'telecharger_attestation_definitive'
+  | 'traiter_projet_attestation';
 
 export interface DemandeListe {
   id: string;
@@ -91,6 +99,7 @@ export interface DemandeListe {
   updated_at: string;
   actions_possibles: ActionPossible[];
   prochaine_relance_possible: string | null;
+  etat_attestation: EtatAttestation;
 }
 
 export interface Indicateur {
@@ -204,12 +213,98 @@ export interface Soumission {
   created_at: string;
 }
 
+export interface Incoherence {
+  code: string;
+  severite: 'MAJEURE' | 'MOYENNE' | 'MINEURE';
+  champ: string | null;
+  message: string;
+  attendu: string | null;
+  trouve: string | null;
+  extrait: string | null;
+  offset: number | null;
+  longueur: number | null;
+}
+
+export interface ResultatAnalyse {
+  statut: 'COHERENT' | 'INCOHERENT';
+  score: number;
+  contenu_hash: string;
+  resume: string;
+  incoherences: Incoherence[];
+  controles_ok: string[];
+}
+
+export interface AnalyseIA {
+  id: string;
+  statut: 'COHERENT' | 'INCOHERENT';
+  score: number;
+  contenu_hash: string;
+  resultat: ResultatAnalyse;
+  created_by: string;
+  created_at: string;
+}
+
+export interface Attestation {
+  id: string;
+  kind: KindAttestation;
+  statut: StatutAttestation;
+  contenu_html: string;
+  contenu_json: unknown;
+  variables_snapshot: Record<string, string | boolean>;
+  numero: string;
+  pdf_disponible: boolean;
+  created_by: string;
+  validated_at: string | null;
+  validated_by: string | null;
+  justification_forcage: string;
+  /** Projet : date de soumission au siège. */
+  soumise_le: string | null;
+  /** Projet : commentaire du siège lorsqu'il est renvoyé pour correction. */
+  commentaire_siege: string;
+  derniere_analyse: AnalyseIA | null;
+  /** La dernière analyse porte-t-elle sur le contenu enregistré ? */
+  analyse_a_jour: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Gabarit {
+  contenu_html: string;
+  contenu_json: unknown;
+  variables: Record<string, string | boolean>;
+  variables_disponibles: Record<string, string>;
+  source: 'GABARIT' | 'PROJET';
+  /** Date de soumission du projet repris comme base (définitive). */
+  projet_soumis_le: string | null;
+  /** Identité de l'assureur (en-tête du document). */
+  assureur: { nom: string; forme: string; rcs: string; adresse: string; mention: string };
+  /** Cadre non modifiable du format officiel AXA (page 1 et en-tête courant). */
+  entete: EnteteAttestation;
+}
+
+export interface EnteteAttestation {
+  accroche: string;
+  intermediaire: { nom: string; adresse: string; telephone: string; email: string };
+  produit: string;
+  numero_contrat: string;
+  reference_client: string;
+  destinataire: { nom: string; adresse: string; cp_ville: string };
+  date_courrier: string;
+  mentions_legales: string;
+}
+
 export interface Notification {
   id: string;
   type: string;
   titre: string;
   message: string;
-  payload: { demande_id?: string; reference?: string; statut?: Statut; decision?: Decision };
+  payload: {
+    demande_id?: string;
+    reference?: string;
+    statut?: Statut;
+    decision?: Decision;
+    onglet?: string | null;
+  };
   lu: boolean;
   lu_le: string | null;
   created_at: string;

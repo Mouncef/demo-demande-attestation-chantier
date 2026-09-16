@@ -27,7 +27,7 @@ export function NotificationsPage() {
             tabIndex={0}
             onClick={() => {
               if (!n.lu) marquer.mutate(n.id);
-              if (n.payload.demande_id) navigate(`/demandes/${n.payload.demande_id}`);
+              if (n.payload.demande_id) navigate(`/demandes/${n.payload.demande_id}${n.payload.onglet ? `?vue=${n.payload.onglet}` : ''}`);
             }}
           >
             <div className="flex between">

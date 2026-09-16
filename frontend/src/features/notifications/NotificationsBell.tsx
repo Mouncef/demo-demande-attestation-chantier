@@ -1,12 +1,7 @@
 // Cloche de notifications : compteur (polling 30 s) et panneau déroulant des dernières notifications.
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  useCompteurNotifications,
-  useMarquerLue,
-  useNotifications,
-  useToutMarquerLu,
-} from '@/api/notifications';
+import { useCompteurNotifications, useMarquerLue, useNotifications, useToutMarquerLu } from '@/api/notifications';
 import type { Notification } from '@/api/types';
 import { formatDateHeure } from '@/lib/format';
 import { Button } from '@/design-system/components';
@@ -32,7 +27,7 @@ export function NotificationsBell() {
   const ouvrir = (n: Notification) => {
     if (!n.lu) marquer.mutate(n.id);
     setOuvert(false);
-    if (n.payload.demande_id) navigate(`/demandes/${n.payload.demande_id}`);
+    if (n.payload.demande_id) navigate(`/demandes/${n.payload.demande_id}${n.payload.onglet ? `?vue=${n.payload.onglet}` : ''}`);
   };
 
   return (
@@ -49,10 +44,7 @@ export function NotificationsBell() {
       </button>
       {ouvert && (
         <div className="bell-panel">
-          <div
-            className="flex between"
-            style={{ padding: '0.6rem 1rem', borderBottom: '1px solid var(--axa-gray-200)' }}
-          >
+          <div className="flex between" style={{ padding: '0.6rem 1rem', borderBottom: '1px solid var(--axa-gray-200)' }}>
             <strong>Notifications</strong>
             <Button variante="ghost" taille="sm" onClick={() => toutLu.mutate()} disabled={!count}>
               Tout marquer lu
@@ -60,13 +52,7 @@ export function NotificationsBell() {
           </div>
           {data?.results.length ? (
             data.results.slice(0, 8).map((n) => (
-              <div
-                key={n.id}
-                className={`notif ${n.lu ? '' : 'notif--non-lue'}`}
-                onClick={() => ouvrir(n)}
-                role="button"
-                tabIndex={0}
-              >
+              <div key={n.id} className={`notif ${n.lu ? '' : 'notif--non-lue'}`} onClick={() => ouvrir(n)} role="button" tabIndex={0}>
                 <div className="notif__titre">{n.titre}</div>
                 <div className="small">{n.message}</div>
                 <div className="notif__date">{formatDateHeure(n.created_at)}</div>
@@ -76,14 +62,7 @@ export function NotificationsBell() {
             <div className="empty">Aucune notification</div>
           )}
           <div style={{ padding: '0.5rem 1rem', textAlign: 'center' }}>
-            <Button
-              variante="ghost"
-              taille="sm"
-              onClick={() => {
-                setOuvert(false);
-                navigate('/notifications');
-              }}
-            >
+            <Button variante="ghost" taille="sm" onClick={() => { setOuvert(false); navigate('/notifications'); }}>
               Voir toutes les notifications
             </Button>
           </div>

@@ -1,5 +1,5 @@
-// Libellés métier centralisés (statuts, décisions, niveaux, énumérations du FDR, erreurs API).
-import type { Decision, NiveauRisque, Statut, TypeChantier, TypeIntervention, Usage } from '@/api/types';
+// Libellés métier centralisés (statuts, décisions, niveaux, énumérations du FDR).
+import type { Decision, EtatAttestation, NiveauRisque, Statut, StatutAttestation, TypeChantier, TypeIntervention, Usage } from '@/api/types';
 
 export const LIBELLES_STATUT: Record<Statut, string> = {
   BROUILLON: 'Brouillon',
@@ -36,6 +36,21 @@ export const LIBELLES_INTERVENTION: Record<TypeIntervention, string> = {
   SOUS_TRAITANT: 'Sous-traitant',
 };
 
+export const LIBELLES_ETAT_ATTESTATION: Record<EtatAttestation, string> = {
+  AUCUNE: 'Aucune attestation',
+  PROJET_EN_COURS: 'Projet en préparation',
+  PROJET_SOUMIS: 'Projet soumis au siège',
+  PROJET_A_CORRIGER: 'Projet à corriger',
+  DEFINITIVE: 'Attestation établie',
+};
+
+export const LIBELLES_STATUT_ATTESTATION: Record<StatutAttestation, string> = {
+  EN_EDITION: 'En édition',
+  SOUMISE: 'Soumis au siège',
+  A_CORRIGER: 'À corriger',
+  VALIDEE: 'Validée',
+};
+
 export const LIBELLES_ERREURS_API: Record<string, string> = {
   TRANSITION_INVALIDE: "Cette action n'est pas possible dans l'état actuel de la demande.",
   DOSSIER_INCOMPLET: 'Le dossier est incomplet : des pièces requises manquent.',
@@ -45,6 +60,7 @@ export const LIBELLES_ERREURS_API: Record<string, string> = {
   INTROUVABLE: 'Ressource introuvable ou inaccessible.',
   NON_AUTHENTIFIE: 'Votre session a expiré, veuillez vous reconnecter.',
   VALIDATION: 'Certaines données sont invalides.',
+  ANALYSE_INCOHERENTE: "L'analyse de cohérence doit être réalisée et cohérente avant validation.",
   TYPE_FICHIER_NON_AUTORISE: "Ce type de fichier n'est pas autorisé.",
   FICHIER_TROP_VOLUMINEUX: 'Le fichier dépasse la taille maximale autorisée.',
   PIECE_DUPLIQUEE: 'Ce fichier a déjà été déposé sur cette demande.',

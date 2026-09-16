@@ -33,6 +33,8 @@ export interface FiltresDemandes {
   page?: number;
   /** Nombre de lignes par page (bornée à 100 par l'API). */
   pageSize?: number;
+  /** Uniquement les demandes dont le projet d'attestation est soumis au siège. */
+  projetSoumis?: boolean;
 }
 
 export function useDemandes(filtres: FiltresDemandes) {
@@ -46,6 +48,7 @@ export function useDemandes(filtres: FiltresDemandes) {
       if (filtres.ordering) params.set('ordering', filtres.ordering);
       if (filtres.page) params.set('page', String(filtres.page));
       if (filtres.pageSize) params.set('page_size', String(filtres.pageSize));
+      if (filtres.projetSoumis) params.set('projet_soumis', 'true');
       const { data } = await api.get<Pagination<DemandeListe>>('/demandes/', { params });
       return data;
     },
