@@ -15,12 +15,16 @@ cp .env.example .env   # facultatif : valeurs de développement intégrées
 docker compose up --build
 ```
 
-* API : http://localhost:8000/api/docs/ (Swagger UI)
-* Sonde de santé : http://localhost:8000/health/
+* Application : http://localhost:8080
+* API : http://localhost:8080/api/docs/ (Swagger UI)
+* Sonde de santé : http://localhost:8080/health/
+
+Le port peut être changé avec `FRONTEND_PORT` dans `.env`.
 
 ## Stack
 
-Python 3.13 · Django 5.2 · Django REST Framework · PostgreSQL 16 · authentification JWT.
+* Backend : Python 3.13 · Django 5.2 · Django REST Framework · PostgreSQL 16 · authentification JWT
+* Frontend : React 19 · TypeScript · Vite · TanStack Query · design system maison (charte AXA)
 
 ## Développement
 
@@ -30,4 +34,11 @@ python -m venv .venv && . .venv/bin/activate
 pip install -e ".[dev]"
 pytest
 ruff check . && ruff format --check .
+```
+
+```bash
+cd frontend
+npm install
+npm run dev        # serveur Vite avec proxy /api vers http://localhost:8000
+npm run typecheck && npm run lint && npm test && npm run build
 ```

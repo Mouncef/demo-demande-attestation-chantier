@@ -1,0 +1,252 @@
+/* Gabarit de page – charte AXA : en-tête blanc (répartition « calm and clear »), titres serif bleu,
+   un seul Mini Switch (diagonale rouge) par écran, page sur Light grey. */
+.layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.header {
+  background: var(--axa-white);
+  color: var(--axa-blue);
+  position: relative;
+  z-index: 30;
+  border-bottom: 1px solid var(--grey-light);
+}
+.header__inner {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  height: var(--header-height);
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  position: relative;
+  z-index: 1;
+}
+/* Mini Switch : signal de navigation, dérivé du logo (une seule occurrence par composition). */
+.header__switch {
+  width: 22px;
+  height: 44px;
+  flex-shrink: 0;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  text-decoration: none;
+  color: var(--axa-blue);
+}
+.brand__logo {
+  height: 44px;
+  width: 44px;
+  display: block;
+}
+.brand__title {
+  font-family: var(--font-titre);
+  font-weight: var(--poids-titre-gras);
+  font-size: 1.15rem;
+  color: var(--axa-blue);
+}
+.nav {
+  display: flex;
+  gap: 0.25rem;
+}
+.nav a {
+  color: var(--axa-blue);
+  text-decoration: none;
+  padding: 0.5rem 0.9rem;
+  font-weight: 600;
+  border-bottom: 3px solid transparent;
+}
+.nav a:hover {
+  background: var(--tint-blue-1);
+}
+.nav a.active {
+  border-bottom-color: var(--axa-red);
+}
+.header__right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.user {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+  text-align: right;
+}
+.user__name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--axa-blue);
+}
+.user__role {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+.btn--on-dark {
+  color: var(--axa-blue);
+}
+.main {
+  flex: 1;
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+.footer {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  padding: 1.5rem;
+}
+.page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+.page-header h1 {
+  margin: 0;
+}
+.bell {
+  position: relative;
+  background: transparent;
+  border: none;
+  color: var(--axa-blue);
+  cursor: pointer;
+  font-size: 1.3rem;
+  padding: 0.3rem;
+}
+.bell__count {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  background: var(--axa-red);
+  color: var(--axa-white);
+  font-size: 0.7rem;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+.bell-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: 360px;
+  background: var(--axa-white);
+  color: var(--text);
+  box-shadow: var(--shadow-2);
+  border-top: 4px solid var(--axa-blue);
+  z-index: 40;
+  max-height: 420px;
+  overflow: auto;
+}
+.notif {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--grey-light);
+  cursor: pointer;
+}
+.notif:hover {
+  background: var(--tint-blue-1);
+}
+.notif--non-lue {
+  border-left: 4px solid var(--axa-red);
+}
+.notif__titre {
+  font-weight: 600;
+  color: var(--axa-blue);
+}
+.notif__date {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+/* --- Connexion : panneau bleu avec Hero Switch, formulaire sur blanc --- */
+.login {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.login__brand {
+  background: var(--axa-blue);
+  color: var(--axa-white);
+  padding: 3rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+.login__brand h1 {
+  color: var(--axa-white);
+  font-size: 2.6rem;
+  font-weight: var(--poids-titre-leger);
+  position: relative;
+  z-index: 1;
+}
+.login__brand p {
+  position: relative;
+  z-index: 1;
+}
+/* Hero Switch : diagonale rouge centrée, au moins 50 % de la hauteur, trois coins visibles. */
+.login__switch {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.login__form {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: var(--axa-white);
+}
+.login__card {
+  width: min(420px, 100%);
+  border-top: none;
+  box-shadow: none;
+  padding: 0;
+}
+.demo-accounts {
+  font-size: 0.85rem;
+  background: var(--tint-blue-1);
+  padding: 0.75rem 1rem;
+  border-left: 3px solid var(--axa-blue);
+  color: var(--axa-blue);
+}
+.demo-accounts button {
+  background: none;
+  border: none;
+  color: var(--axa-blue);
+  cursor: pointer;
+  font-weight: 600;
+  padding: 0;
+}
+@media (max-width: 800px) {
+  .login {
+    grid-template-columns: 1fr;
+  }
+  .login__brand {
+    min-height: 40vh;
+  }
+  .header__inner {
+    gap: 1rem;
+    padding: 0 1rem;
+  }
+  .brand__title,
+  .user,
+  .header__switch {
+    display: none;
+  }
+}

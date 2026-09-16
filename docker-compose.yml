@@ -4,7 +4,8 @@
 #     docker compose up --build
 # Services :
 #   db        PostgreSQL 16
-#   backend   API Django (migrations automatiques)   http://localhost:8000/api/docs/
+#   backend   API Django (migrations automatiques)          http://localhost:8080/api/docs/
+#   frontend  React servi par nginx, proxy /api → backend   http://localhost:8080
 # =============================================================================
 name: attestations-chantier
 
@@ -49,8 +50,19 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    expose:
+      - "8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      target: prod
+    restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "${FRONTEND_PORT:-8080}:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
 
 volumes:
   pgdata:

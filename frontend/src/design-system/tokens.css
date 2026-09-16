@@ -1,0 +1,108 @@
+/* =============================================================================
+   Design tokens – charte graphique AXA (Brand Hub, sections Colour / Typography / The Switch).
+   Deux couches :
+     1. couleurs de marque, nommées comme la charte (Core, Tints, Data) – aucune autre couleur n'est admise ;
+     2. rôles sémantiques (surfaces, texte, états) dérivés uniquement de la couche 1, en respectant les
+        combinaisons accessibles publiées (fond → texte) : B→W/BT1/RT1, W→B/BT3/BLK, BT1→B/BT3, BT2→BT3,
+        BT3→W/BT1, RT1→RT3, RT3→W/RT1, LG→B, DG→B, BLK→W ; Data : Leaf/Mint/Sky/Cotton/Coral/Sunshine→B,
+        Cherry/Teal/Grape→W.
+   Interdits : AXA Red et Data en fond de page ; Data hors infographies ; italique ; titres en capitales.
+   ============================================================================ */
+:root {
+  /* ---- 1. Core palette ---- */
+  --axa-blue: #00008f; /* AXA Blue (B) */
+  --axa-white: #ffffff; /* AXA White (W) */
+  --axa-red: #ff1721; /* AXA Red (R) – accent uniquement, jamais en fond */
+
+  /* ---- 1. Tints palette ---- */
+  --tint-red-1: #ffeaea; /* RT1 */
+  --tint-red-2: #ff4e56; /* RT2 */
+  --tint-red-3: #750707; /* RT3 */
+  --tint-blue-1: #e2efff; /* BT1 */
+  --tint-blue-2: #6574f8; /* BT2 */
+  --tint-blue-3: #0c0e45; /* BT3 */
+  --grey-light: #e6e6e6; /* LG */
+  --grey-dark: #999999; /* DG */
+  --black: #0e0e0e; /* BLK */
+
+  /* ---- 1. Data palette (infographies uniquement) ---- */
+  --data-cotton-candy: #ffb4ce;
+  --data-coral: #ff9c62;
+  --data-sunshine: #fff06c;
+  --data-leaf: #58c645;
+  --data-mint: #81eebb;
+  --data-sky: #74bde8;
+  --data-cherry: #a30245;
+  --data-teal: #0f717f;
+  --data-grape: #614fe8;
+
+  /* ---- 2. Rôles : surfaces ---- */
+  --surface-page: var(--grey-light);
+  --surface-card: var(--axa-white);
+  --surface-brand: var(--axa-blue);
+  --surface-dark: var(--tint-blue-3);
+  --surface-soft: var(--tint-blue-1);
+  --border: var(--grey-light);
+  --border-strong: var(--grey-dark);
+
+  /* ---- 2. Rôles : texte ---- */
+  --text: var(--black);
+  --text-title: var(--axa-blue);
+  --text-secondary: var(--tint-blue-3);
+  --text-muted: var(--grey-dark); /* réservé aux éléments non essentiels (placeholders, pieds de page) */
+  --text-on-brand: var(--axa-white);
+  --link: var(--axa-blue);
+  --focus: var(--tint-blue-2);
+
+  /* ---- 2. Rôles : états (toujours accompagnés d'une icône ou d'un libellé) ---- */
+  --state-success-bg: var(--data-leaf);
+  --state-success-fg: var(--axa-blue);
+  --state-danger-bg: var(--tint-red-1);
+  --state-danger-fg: var(--tint-red-3);
+  --state-danger-strong: var(--tint-red-3);
+  --state-warning-bg: var(--data-sunshine);
+  --state-warning-fg: var(--axa-blue);
+  --state-info-bg: var(--tint-blue-1);
+  --state-info-fg: var(--axa-blue);
+  --state-neutral-bg: var(--grey-light);
+  --state-neutral-fg: var(--axa-blue);
+
+  /* ---- Alias historiques (anciens noms encore référencés dans les features) ---- */
+  --axa-blue-dark: var(--tint-blue-3);
+  --axa-blue-light: var(--tint-blue-2);
+  --axa-blue-pale: var(--tint-blue-1);
+  --axa-blue-pale-2: var(--tint-blue-1);
+  --axa-red-dark: var(--tint-red-3);
+  --axa-red-pale: var(--tint-red-1);
+  --axa-black: var(--black);
+  --axa-gray-900: var(--black);
+  --axa-gray-700: var(--tint-blue-3);
+  --axa-gray-500: var(--grey-dark);
+  --axa-gray-300: var(--grey-dark);
+  --axa-gray-200: var(--grey-light);
+  --axa-gray-100: var(--grey-light);
+  --axa-gray-50: var(--axa-white);
+  --axa-green: var(--data-leaf);
+  --axa-green-pale: var(--data-leaf);
+  --axa-orange: var(--data-sunshine);
+  --axa-orange-pale: var(--data-sunshine);
+  --axa-teal: var(--data-teal);
+
+  /* ---- Typographie ---- */
+  /* Publico Headline (police sous licence) pour les titres ; Source Serif 4 (libre) en substitut. */
+  --font-titre: 'Publico Headline', 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --font-texte: 'Source Sans 3', 'Source Sans Pro', 'Segoe UI', Arial, sans-serif;
+  --font-sans: var(--font-texte);
+  --poids-titre-leger: 300;
+  --poids-titre-gras: 700;
+
+  /* ---- Formes et mesures ---- */
+  --radius: 0; /* angles droits */
+  --radius-sm: 2px;
+  --shadow-1: 0 1px 3px rgba(14, 14, 14, 0.12);
+  --shadow-2: 0 4px 16px rgba(14, 14, 14, 0.16);
+  --focus-ring: 0 0 0 3px var(--focus);
+  --transition: 150ms ease;
+  --header-height: 72px;
+  --content-max: 1280px;
+}

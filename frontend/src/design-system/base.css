@@ -1,0 +1,139 @@
+/* Styles globaux – charte AXA : Source Sans pour le texte, Publico Headline (ou substitut) pour les titres,
+   texte aligné à gauche, jamais d'italique ni de titres en capitales. */
+@import './tokens.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  margin: 0;
+  font-family: var(--font-texte);
+  font-weight: 400;
+  color: var(--text);
+  background: var(--surface-page);
+  line-height: 1.45;
+  text-align: left;
+}
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-titre);
+  color: var(--text-title);
+  margin: 0 0 0.5rem;
+  line-height: 1.2;
+  text-transform: none;
+  font-style: normal;
+}
+h1 {
+  font-size: 2rem;
+  font-weight: var(--poids-titre-leger);
+}
+h2 {
+  font-size: 1.4rem;
+  font-weight: var(--poids-titre-leger);
+}
+h3 {
+  font-size: 1.15rem;
+  font-weight: var(--poids-titre-gras);
+}
+h4 {
+  font-size: 1rem;
+  font-weight: var(--poids-titre-gras);
+}
+p {
+  margin: 0 0 0.75rem;
+}
+a {
+  color: var(--link);
+}
+em,
+i {
+  font-style: normal; /* la charte proscrit l'italique */
+  font-weight: 600;
+}
+strong,
+b {
+  font-weight: 600;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.muted {
+  color: var(--text-secondary);
+}
+.small {
+  font-size: 0.875rem;
+}
+.mt-1 {
+  margin-top: 0.5rem;
+}
+.mt-2 {
+  margin-top: 1rem;
+}
+.mt-3 {
+  margin-top: 1.5rem;
+}
+.mb-2 {
+  margin-bottom: 1rem;
+}
+.flex {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+.flex-wrap {
+  flex-wrap: wrap;
+}
+.between {
+  justify-content: space-between;
+}
+.grow {
+  flex: 1;
+}
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+@media (max-width: 800px) {
+  .grid-2,
+  .grid-3 {
+    grid-template-columns: 1fr;
+  }
+}
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.right {
+  margin-left: auto;
+}
