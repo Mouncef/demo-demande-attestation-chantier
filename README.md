@@ -6,8 +6,8 @@ métier et d'envoyer la demande au **siège**, puis au siège de l'instruire (ac
 compléments) et d'établir l'**attestation de chantier** au format officiel AXA dans un éditeur riche, avec une
 analyse de cohérence entre le FDR et l'attestation.
 
-Ce document décrit l'installation et l'utilisation. Les choix techniques sont détaillés dans
-[docs/CHOIX_TECHNIQUES.md](docs/CHOIX_TECHNIQUES.md).
+Ce document décrit l'installation et l'utilisation. La documentation détaillée est dans le dossier
+[docs/](docs/) (voir la section [Documentation](#9-documentation)).
 
 Démo en ligne : https://demo.zaghratmouncef.com
 
@@ -167,8 +167,21 @@ Détails dans [deploy/k8s/README.md](deploy/k8s/README.md).
 │   └── tests/               # pytest
 ├── frontend/                # React + TypeScript (Vite) : api/, design-system/, features/, lib/
 ├── deploy/k8s/              # Kustomize (base + overlay VPS)
-├── docs/CHOIX_TECHNIQUES.md # architecture, règles métier, sécurité, justification des choix
+├── docs/                    # choix techniques, architecture, règles métier, sécurité, charte, améliorations, OpenAPI
 ├── docker-compose.yml       # db, mailpit, backend, frontend
 ├── Makefile                 # raccourcis compose et déploiement Kubernetes
 └── .github/workflows/ci.yml # tests, validation K8s, images GHCR
 ```
+
+## 9. Documentation
+
+| Document | Contenu |
+|---|---|
+| [docs/CHOIX_TECHNIQUES.md](docs/CHOIX_TECHNIQUES.md) | Pile technique justifiée, architecture, modélisation du métier, sécurité, qualité, déploiement, limites |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Vue d'ensemble, découpage des applications backend et des fonctionnalités frontend, flux principaux, données persistées |
+| [docs/REGLES_METIER.md](docs/REGLES_METIER.md) | Machine à états, droits et codes HTTP, validation du FDR, pièces requises, scoring, relance, attestations, analyse de cohérence, notifications |
+| [docs/SECURITE.md](docs/SECURITE.md) | Authentification, autorisation, pièces jointes, éditeur riche, transport, conteneurs, journalisation |
+| [docs/CHARTE.md](docs/CHARTE.md) | Application de la charte graphique AXA : palettes, typographie, composants, PDF, emails |
+| [docs/améliorations.md](docs/améliorations.md) | Propositions d'évolutions priorisées (API Sirene, analyse hybride, vérification par QR code, lecture des pièces, signature électronique, API partenaires) |
+| [docs/openapi.yaml](docs/openapi.yaml) | Schéma OpenAPI de l'API (également servi sur `/api/schema/` et `/api/docs/`) |
+| [deploy/k8s/README.md](deploy/k8s/README.md) | Déploiement Kubernetes : prérequis, secrets, commandes make |

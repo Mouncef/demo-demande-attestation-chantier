@@ -1,0 +1,2496 @@
+openapi: 3.0.3
+info:
+  title: API – Demandes d'attestation de chantier (AXA)
+  version: 1.0.0
+  description: 'API REST de la plateforme interne de gestion des demandes d''attestation
+    de chantier : saisie du Formulaire de Déclaration du Risque (FDR), pièces justificatives,
+    scoring de risque, workflow siège, éditeur d''attestation et analyse de cohérence
+    simulée.'
+paths:
+  /api/v1/auth/login/:
+    post:
+      operationId: auth_login_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      summary: Connexion (email + mot de passe) → tokens JWT
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/logout/:
+    post:
+      operationId: auth_logout_create
+      description: Révoque le refresh token (liste noire) ; l'access token expire
+        naturellement (30 min).
+      summary: Déconnexion (révocation du refresh token)
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+        required: true
+      responses:
+        '204':
+          description: Token révoqué
+  /api/v1/auth/me/:
+    get:
+      operationId: auth_me_retrieve
+      description: Profil de l'utilisateur connecté.
+      summary: Profil de l'utilisateur connecté
+      tags:
+      - auth
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Utilisateur'
+          description: ''
+  /api/v1/auth/refresh/:
+    post:
+      operationId: auth_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      summary: Renouvellement de l'access token (rotation du refresh)
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/v1/demandes/:
+    get:
+      operationId: demandes_list
+      summary: Liste des demandes (filtres statut / décision, recherche, tri)
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Quel champ utiliser pour classer les résultats.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Nombre de résultats à retourner par page.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Référence, assuré, chantier, contrat
+      tags:
+      - demandes
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDemandeListeList'
+          description: ''
+    post:
+      operationId: demandes_create
+      summary: Créer une demande (brouillon)
+      tags:
+      - demandes
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DemandeDetail'
+          description: ''
+  /api/v1/demandes/{demande_pk}/attestations/{kind}/:
+    get:
+      operationId: demandes_attestations_retrieve
+      summary: Lire l'attestation (404 si elle n'existe pas encore)
+      parameters:
+      - in: path
+        name: demande_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: kind
+        schema:
+          type: string
+        required: true
+      tags:
+      - attestations
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Attestation'
+          description: ''
+    put:
+      operationId: demandes_attestations_update
+      summary: Créer / mettre à jour le contenu
+      parameters:
+      - in: path
+        name: demande_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: kind
+        schema:
+          type: string
+        required: true
+      tags:
+      - attestations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnregistrerAttestationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EnregistrerAttestationRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Attestation'
+          description: ''
+  /api/v1/demandes/{demande_pk}/attestations/{kind}/analyser/:
+    post:
+      operationId: demandes_attestations_analyser_create
+      description: 'Analyse de cohérence : outil du siège pour établir l''attestation
+        définitive (siège + définitive uniquement).'
+      summary: Analyser la cohérence FDR ↔ attestation définitive (IA simulée, siège
+        uniquement)
+      parameters:
+      - in: path
+        name: demande_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: kind
+        schema:
+          type: string
+        required: true
+      tags:
+      - attestations
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyseIA'
+          description: ''
+  /api/v1/demandes/{demande_pk}/attestations/{kind}/analyses/:
+    get:
+      operationId: demandes_attestations_analyses_list
+      summary: Historique des analyses
+      parameters:
+      - in: path
+        name: demande_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: kind
+        schema:
+          type: string
+        required: true
+      tags:
+      - attestations
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AnalyseIA'
+          description: ''
+  /api/v1/demandes/{demande_pk}/attestations/{kind}/demander-correction/:
+    post:
+      operationId: demandes_attestations_demander_correction_create
+      summary: 'Siège : renvoyer le projet soumis au distributeur pour correction'
+      parameters:
+      - in: path
+        name: demande_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: kind
+        schema:
+          type: string
+        required: true
+      tags:
+      - attestations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DemanderCorrectionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DemanderCorrectionRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Attestation'
+          description: ''
+  /api/v1/demandes/{demande_pk}/attestations/{kind}/gabarit/:
+    get:
+      operationId: demandes_attestations_gabarit_retrieve
+      summary: Contenu initial (gabarit AXA ou copie du projet) et variables
+      parameters:
+      - in: path
+        name: demande_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: kind
+        schema:
+          type: string
+        required: true
+      tags:
+      - attestations
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Gabarit'
+          description: ''
+  /api/v1/demandes/{demande_pk}/attestations/{kind}/pdf/:
+    get:
+      operationId: demandes_attestations_pdf_retrieve
+      summary: 'PDF de l''attestation (définitive : uniquement si validée)'
+      parameters:
+      - in: path
+        name: demande_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: kind
+        schema:
+          type: string
+        required: true
+      tags:
+      - attestations
+      responses:
+        '200':
+          description: application/pdf
+  /api/v1/demandes/{demande_pk}/attestations/{kind}/previsualiser/:
+    post:
+      operationId: demandes_attestations_previsualiser_create
+      summary: Prévisualisation HTML (cadre AXA) du contenu fourni ou enregistré
+      parameters:
+      - in: path
+        name: demande_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: kind
+        schema:
+          type: string
+        required: true
+      tags:
+      - attestations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrevisualiserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PrevisualiserRequest'
+      responses:
+        '200':
+          description: text/html
+  /api/v1/demandes/{demande_pk}/attestations/{kind}/rouvrir/:
+    post:
+      operationId: demandes_attestations_rouvrir_create
+      summary: Reprendre un projet soumis (distributeur)
+      parameters:
+      - in: path
+        name: demande_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: kind
+        schema:
+          type: string
+        required: true
+      tags:
+      - attestations
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Attestation'
+          description: ''
+  /api/v1/demandes/{demande_pk}/attestations/{kind}/soumettre/:
+    post:
+      operationId: demandes_attestations_soumettre_create
+      summary: Soumettre le projet d'attestation au siège (notification + email)
+      parameters:
+      - in: path
+        name: demande_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: kind
+        schema:
+          type: string
+        required: true
+      tags:
+      - attestations
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Attestation'
+          description: ''
+  /api/v1/demandes/{demande_pk}/attestations/{kind}/valider/:
+    post:
+      operationId: demandes_attestations_valider_create
+      summary: 'Siège : valider l''attestation définitive (analyse cohérente requise
+        ou forçage justifié)'
+      parameters:
+      - in: path
+        name: demande_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: kind
+        schema:
+          type: string
+        required: true
+      tags:
+      - attestations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValiderAttestationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ValiderAttestationRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Attestation'
+          description: ''
+  /api/v1/demandes/{demande_pk}/pieces/:
+    get:
+      operationId: demandes_pieces_list
+      summary: Liste des pièces de la demande
+      parameters:
+      - in: path
+        name: demande_pk
+        schema:
+          type: string
+          pattern: ^[0-9a-f-]{36}$
+        required: true
+      - name: ordering
+        required: false
+        in: query
+        description: Quel champ utiliser pour classer les résultats.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: Un terme de recherche.
+        schema:
+          type: string
+      tags:
+      - pieces
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PieceJointe'
+          description: ''
+    post:
+      operationId: demandes_pieces_create
+      summary: 'Déposer une pièce (multipart : fichier + type_piece)'
+      parameters:
+      - in: path
+        name: demande_pk
+        schema:
+          type: string
+          pattern: ^[0-9a-f-]{36}$
+        required: true
+      tags:
+      - pieces
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UploadPieceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UploadPieceRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadPieceRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PieceJointe'
+          description: ''
+  /api/v1/demandes/{demande_pk}/pieces/{id}/:
+    patch:
+      operationId: demandes_pieces_partial_update
+      summary: Changer le type d'une pièce
+      parameters:
+      - in: path
+        name: demande_pk
+        schema:
+          type: string
+          pattern: ^[0-9a-f-]{36}$
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - pieces
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedModifierTypePieceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedModifierTypePieceRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedModifierTypePieceRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PieceJointe'
+          description: ''
+    delete:
+      operationId: demandes_pieces_destroy
+      summary: Supprimer une pièce (suppression logique)
+      parameters:
+      - in: path
+        name: demande_pk
+        schema:
+          type: string
+          pattern: ^[0-9a-f-]{36}$
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - pieces
+      responses:
+        '204':
+          description: No response body
+  /api/v1/demandes/{demande_pk}/pieces/{id}/download/:
+    get:
+      operationId: demandes_pieces_download_retrieve
+      summary: Télécharger une pièce (authentifié, contrôle d'accès)
+      parameters:
+      - in: path
+        name: demande_pk
+        schema:
+          type: string
+          pattern: ^[0-9a-f-]{36}$
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - pieces
+      responses:
+        '200':
+          description: Flux binaire
+  /api/v1/demandes/{id}/:
+    get:
+      operationId: demandes_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - demandes
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DemandeDetail'
+          description: ''
+    delete:
+      operationId: demandes_destroy
+      summary: Supprimer un brouillon jamais envoyé
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - demandes
+      responses:
+        '204':
+          description: No response body
+  /api/v1/demandes/{id}/accepter/:
+    post:
+      operationId: demandes_accepter_create
+      summary: 'Siège : accepter la demande'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - demandes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccepterRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AccepterRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DemandeDetail'
+          description: ''
+  /api/v1/demandes/{id}/commentaire/:
+    patch:
+      operationId: demandes_commentaire_partial_update
+      summary: Commentaire (distributeur si éditable, siège si en cours)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - demandes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCommentaireRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCommentaireRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DemandeDetail'
+          description: ''
+  /api/v1/demandes/{id}/completude/:
+    get:
+      operationId: demandes_completude_retrieve
+      summary: Pièces requises, complétude et validité du FDR
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - demandes
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DemandeDetail'
+          description: ''
+  /api/v1/demandes/{id}/demander-complements/:
+    post:
+      operationId: demandes_demander_complements_create
+      summary: 'Siège : demander des éléments complémentaires'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - demandes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComplementsRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ComplementsRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DemandeDetail'
+          description: ''
+  /api/v1/demandes/{id}/envoyer/:
+    post:
+      operationId: demandes_envoyer_create
+      summary: Envoyer / renvoyer la demande au siège
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - demandes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnvoyerRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EnvoyerRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DemandeDetail'
+          description: ''
+  /api/v1/demandes/{id}/fdr/:
+    get:
+      operationId: demandes_fdr_retrieve
+      summary: Lire le FDR
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - demandes
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FDR'
+          description: ''
+    patch:
+      operationId: demandes_fdr_partial_update
+      summary: Lire / modifier le FDR (brouillon, verrou optimiste `version`)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - demandes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedFDRPatchRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedFDRPatchRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DemandeDetail'
+          description: ''
+  /api/v1/demandes/{id}/historique/:
+    get:
+      operationId: demandes_historique_list
+      summary: Historique des actions
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      - name: ordering
+        required: false
+        in: query
+        description: Quel champ utiliser pour classer les résultats.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Nombre de résultats à retourner par page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: Un terme de recherche.
+        schema:
+          type: string
+      tags:
+      - demandes
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedHistoriqueList'
+          description: ''
+  /api/v1/demandes/{id}/refuser/:
+    post:
+      operationId: demandes_refuser_create
+      summary: 'Siège : refuser la demande (motif obligatoire)'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - demandes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefuserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RefuserRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DemandeDetail'
+          description: ''
+  /api/v1/demandes/{id}/relancer/:
+    post:
+      operationId: demandes_relancer_create
+      summary: Relancer le siège par email (délai minimal 24 h)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - demandes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RelancerRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RelancerRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Relance'
+          description: ''
+  /api/v1/demandes/{id}/relances/:
+    get:
+      operationId: demandes_relances_list
+      summary: Historique des relances
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      - name: ordering
+        required: false
+        in: query
+        description: Quel champ utiliser pour classer les résultats.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Nombre de résultats à retourner par page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: Un terme de recherche.
+        schema:
+          type: string
+      tags:
+      - demandes
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRelanceList'
+          description: ''
+  /api/v1/demandes/{id}/scoring/:
+    get:
+      operationId: demandes_scoring_retrieve
+      summary: Scoring de risque simulé (calcul à la volée)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - demandes
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DemandeDetail'
+          description: ''
+  /api/v1/demandes/{id}/soumissions/:
+    get:
+      operationId: demandes_soumissions_list
+      summary: Soumissions successives (snapshots)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      - name: ordering
+        required: false
+        in: query
+        description: Quel champ utiliser pour classer les résultats.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Nombre de résultats à retourner par page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: Un terme de recherche.
+        schema:
+          type: string
+      tags:
+      - demandes
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSoumissionList'
+          description: ''
+  /api/v1/demandes/{id}/soumissions/{numero}/pdf/:
+    get:
+      operationId: demandes_soumissions_pdf_retrieve
+      summary: PDF du FDR d'une soumission
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: numero
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - demandes
+      responses:
+        '200':
+          description: application/pdf
+  /api/v1/notifications/:
+    get:
+      operationId: notifications_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Quel champ utiliser pour classer les résultats.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Nombre de résultats à retourner par page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: Un terme de recherche.
+        schema:
+          type: string
+      tags:
+      - notifications
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedNotificationList'
+          description: ''
+  /api/v1/notifications/{id}/lire/:
+    post:
+      operationId: notifications_lire_create
+      summary: Marquer une notification comme lue
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - notifications
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
+  /api/v1/notifications/lire-toutes/:
+    post:
+      operationId: notifications_lire_toutes_create
+      summary: Tout marquer comme lu
+      tags:
+      - notifications
+      responses:
+        '204':
+          description: No response body
+  /api/v1/notifications/non-lues/count/:
+    get:
+      operationId: notifications_non_lues_count_retrieve
+      summary: Nombre de notifications non lues
+      tags:
+      - notifications
+      responses:
+        '200':
+          description: '{"count": n}'
+  /api/v1/referentiels/:
+    get:
+      operationId: referentiels_retrieve
+      description: Valeurs de référence pour le formulaire dynamique du frontend.
+      summary: Référentiels (choix, catalogue de pièces, seuils)
+      tags:
+      - referentiels
+      responses:
+        '200':
+          description: Référentiels
+  /api/v1/reporting/synthese/:
+    get:
+      operationId: reporting_synthese_retrieve
+      description: 'Indicateurs : globaux pour le siège, restreints à ses demandes
+        pour un distributeur.'
+      summary: 'Synthèse : volumes, décisions, délais, mois, risque, circuit d''attestation
+        (période 30/90/365/tout)'
+      parameters:
+      - in: query
+        name: periode
+        schema:
+          type: string
+        description: 30, 90, 365 (jours) ou tout
+      tags:
+      - reporting
+      responses:
+        '200':
+          description: Synthèse
+components:
+  schemas:
+    AccepterRequest:
+      type: object
+      properties:
+        commentaire:
+          type: string
+          maxLength: 2000
+    ActionEnum:
+      enum:
+      - CREATION
+      - ENVOI
+      - RENVOI
+      - COMPLEMENTS
+      - ACCEPTATION
+      - REFUS
+      - RELANCE
+      - ATTESTATION_PROJET_VALIDEE
+      - ATTESTATION_PROJET_SOUMISE
+      - ATTESTATION_PROJET_A_CORRIGER
+      - ATTESTATION_PROJET_ROUVERTE
+      - ATTESTATION_DEFINITIVE_VALIDEE
+      type: string
+      description: |-
+        * `CREATION` - Création
+        * `ENVOI` - Envoi au siège
+        * `RENVOI` - Renvoi après compléments
+        * `COMPLEMENTS` - Compléments demandés
+        * `ACCEPTATION` - Acceptation
+        * `REFUS` - Refus
+        * `RELANCE` - Relance
+        * `ATTESTATION_PROJET_VALIDEE` - Projet d'attestation validé (ancien circuit)
+        * `ATTESTATION_PROJET_SOUMISE` - Projet d'attestation soumis au siège
+        * `ATTESTATION_PROJET_A_CORRIGER` - Projet d'attestation renvoyé pour correction
+        * `ATTESTATION_PROJET_ROUVERTE` - Projet d'attestation repris par le distributeur
+        * `ATTESTATION_DEFINITIVE_VALIDEE` - Attestation définitive validée
+    AnalyseIA:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        statut:
+          allOf:
+          - $ref: '#/components/schemas/AnalyseIAStatutEnum'
+          readOnly: true
+        score:
+          type: integer
+          readOnly: true
+          title: Score de cohérence (%)
+        contenu_hash:
+          type: string
+          readOnly: true
+          title: Empreinte du contenu analysé
+        resultat:
+          readOnly: true
+          title: Résultat détaillé
+        created_by:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Créé le
+      required:
+      - contenu_hash
+      - created_at
+      - created_by
+      - id
+      - resultat
+      - score
+      - statut
+    AnalyseIAStatutEnum:
+      enum:
+      - COHERENT
+      - INCOHERENT
+      type: string
+      description: |-
+        * `COHERENT` - Cohérent
+        * `INCOHERENT` - Incohérences détectées
+    Attestation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/KindEnum'
+          readOnly: true
+          title: Type
+        statut:
+          allOf:
+          - $ref: '#/components/schemas/AttestationStatutEnum'
+          readOnly: true
+        contenu_html:
+          type: string
+          readOnly: true
+        contenu_json:
+          readOnly: true
+          nullable: true
+          title: Document éditeur
+        variables_snapshot:
+          readOnly: true
+          title: Variables
+        numero:
+          type: string
+          readOnly: true
+          title: Numéro d'attestation
+        pdf_disponible:
+          type: boolean
+          readOnly: true
+        created_by:
+          type: string
+          readOnly: true
+        validated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: Validée le
+        validated_by:
+          type: string
+          readOnly: true
+        justification_forcage:
+          type: string
+          readOnly: true
+          title: Justification du forçage
+        derniere_analyse:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 'Résultat de la dernière analyse : réservé au siège (outil
+            d''instruction).'
+          readOnly: true
+        analyse_a_jour:
+          type: boolean
+          description: Vrai si la dernière analyse porte sur le contenu actuellement
+            enregistré.
+          readOnly: true
+        soumise_le:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: Soumise au siège le
+        commentaire_siege:
+          type: string
+          readOnly: true
+          title: Commentaire du siège (demande de correction)
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Créé le
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Modifié le
+      required:
+      - analyse_a_jour
+      - commentaire_siege
+      - contenu_html
+      - contenu_json
+      - created_at
+      - created_by
+      - derniere_analyse
+      - id
+      - justification_forcage
+      - kind
+      - numero
+      - pdf_disponible
+      - soumise_le
+      - statut
+      - updated_at
+      - validated_at
+      - validated_by
+      - variables_snapshot
+    AttestationStatutEnum:
+      enum:
+      - EN_EDITION
+      - SOUMISE
+      - A_CORRIGER
+      - VALIDEE
+      type: string
+      description: |-
+        * `EN_EDITION` - En cours d'édition
+        * `SOUMISE` - Soumise au siège
+        * `A_CORRIGER` - À corriger
+        * `VALIDEE` - Validée
+    BlankEnum:
+      enum:
+      - ''
+    ComplementsRequest:
+      type: object
+      properties:
+        message:
+          type: string
+          minLength: 10
+          maxLength: 2000
+      required:
+      - message
+    DecisionEnum:
+      enum:
+      - ACCEPTEE
+      - REFUSEE
+      type: string
+      description: |-
+        * `ACCEPTEE` - Acceptée
+        * `REFUSEE` - Refusée
+    DemandeDetail:
+      type: object
+      description: 'Détail complet : FDR, commentaires, décision, compteurs de relance.'
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        reference:
+          type: string
+          readOnly: true
+          title: Référence
+        statut:
+          allOf:
+          - $ref: '#/components/schemas/VersStatutEnum'
+          readOnly: true
+        decision:
+          readOnly: true
+          nullable: true
+          title: Décision
+          oneOf:
+          - $ref: '#/components/schemas/DecisionEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        distributeur:
+          allOf:
+          - $ref: '#/components/schemas/DistributeurLeger'
+          readOnly: true
+        assure_nom:
+          type: string
+          readOnly: true
+        chantier_nom:
+          type: string
+          readOnly: true
+        chantier_ville:
+          type: string
+          readOnly: true
+        cout_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        niveau_risque:
+          type: string
+          nullable: true
+          readOnly: true
+        submitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: Dernier envoi au siège
+        decided_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: Date de décision
+        nb_soumissions:
+          type: integer
+          readOnly: true
+          title: Nombre d'envois
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Créé le
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Modifié le
+        actions_possibles:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        prochaine_relance_possible:
+          type: string
+          nullable: true
+          readOnly: true
+        etat_attestation:
+          type: string
+          description: |-
+            État du circuit d'attestation (attestations préchargées) :
+            AUCUNE / PROJET_EN_COURS / PROJET_SOUMIS / PROJET_A_CORRIGER / DEFINITIVE (établie).
+          readOnly: true
+        fdr:
+          allOf:
+          - $ref: '#/components/schemas/FDR'
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+        commentaire_distributeur:
+          type: string
+          readOnly: true
+          title: Commentaire du distributeur
+        commentaire_siege:
+          type: string
+          readOnly: true
+          title: Commentaire du siège
+        motif_refus:
+          type: string
+          readOnly: true
+          title: Motif du refus
+        message_complements:
+          type: string
+          readOnly: true
+          title: Éléments complémentaires demandés
+        first_submitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: Premier envoi au siège
+        decided_by:
+          allOf:
+          - $ref: '#/components/schemas/DistributeurLeger'
+          readOnly: true
+        scoring_snapshot:
+          readOnly: true
+          nullable: true
+          title: Scoring au dernier envoi
+        nb_relances:
+          type: integer
+          readOnly: true
+        derniere_relance_le:
+          type: string
+          nullable: true
+          readOnly: true
+      required:
+      - actions_possibles
+      - assure_nom
+      - chantier_nom
+      - chantier_ville
+      - commentaire_distributeur
+      - commentaire_siege
+      - cout_total
+      - created_at
+      - decided_at
+      - decided_by
+      - decision
+      - derniere_relance_le
+      - distributeur
+      - etat_attestation
+      - fdr
+      - first_submitted_at
+      - id
+      - message_complements
+      - motif_refus
+      - nb_relances
+      - nb_soumissions
+      - niveau_risque
+      - prochaine_relance_possible
+      - reference
+      - scoring_snapshot
+      - statut
+      - submitted_at
+      - updated_at
+      - version
+    DemandeListe:
+      type: object
+      description: Ligne de la liste des demandes.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        reference:
+          type: string
+          readOnly: true
+          title: Référence
+        statut:
+          allOf:
+          - $ref: '#/components/schemas/VersStatutEnum'
+          readOnly: true
+        decision:
+          readOnly: true
+          nullable: true
+          title: Décision
+          oneOf:
+          - $ref: '#/components/schemas/DecisionEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        distributeur:
+          allOf:
+          - $ref: '#/components/schemas/DistributeurLeger'
+          readOnly: true
+        assure_nom:
+          type: string
+          readOnly: true
+        chantier_nom:
+          type: string
+          readOnly: true
+        chantier_ville:
+          type: string
+          readOnly: true
+        cout_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        niveau_risque:
+          type: string
+          nullable: true
+          readOnly: true
+        submitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: Dernier envoi au siège
+        decided_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: Date de décision
+        nb_soumissions:
+          type: integer
+          readOnly: true
+          title: Nombre d'envois
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Créé le
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Modifié le
+        actions_possibles:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        prochaine_relance_possible:
+          type: string
+          nullable: true
+          readOnly: true
+        etat_attestation:
+          type: string
+          description: |-
+            État du circuit d'attestation (attestations préchargées) :
+            AUCUNE / PROJET_EN_COURS / PROJET_SOUMIS / PROJET_A_CORRIGER / DEFINITIVE (établie).
+          readOnly: true
+      required:
+      - actions_possibles
+      - assure_nom
+      - chantier_nom
+      - chantier_ville
+      - cout_total
+      - created_at
+      - decided_at
+      - decision
+      - distributeur
+      - etat_attestation
+      - id
+      - nb_soumissions
+      - niveau_risque
+      - prochaine_relance_possible
+      - reference
+      - statut
+      - submitted_at
+      - updated_at
+    DemanderCorrectionRequest:
+      type: object
+      properties:
+        commentaire:
+          type: string
+          minLength: 10
+          maxLength: 2000
+      required:
+      - commentaire
+    DistributeurLeger:
+      type: object
+      properties:
+        id:
+          type: integer
+        nom_affichage:
+          type: string
+        email:
+          type: string
+          format: email
+        organisation:
+          type: string
+      required:
+      - email
+      - id
+      - nom_affichage
+      - organisation
+    EnregistrerAttestationRequest:
+      type: object
+      properties:
+        contenu_html:
+          type: string
+          maxLength: 200000
+        contenu_json:
+          nullable: true
+      required:
+      - contenu_html
+    EnvoyerRequest:
+      type: object
+      properties:
+        commentaire:
+          type: string
+          maxLength: 2000
+    FDR:
+      type: object
+      description: Lecture / écriture du FDR. Le mode de validation est passé via
+        `context["mode"]`.
+      properties:
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Créé le
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Modifié le
+        assure_nom:
+          type: string
+          nullable: true
+          title: Nom / raison sociale
+          maxLength: 200
+        assure_adresse:
+          type: string
+          nullable: true
+          title: Adresse de l'assuré
+          maxLength: 200
+        assure_code_postal:
+          type: string
+          nullable: true
+          title: Code postal de l'assuré
+          maxLength: 8
+        assure_ville:
+          type: string
+          nullable: true
+          title: Ville de l'assuré
+          maxLength: 100
+        assure_siret:
+          type: string
+          nullable: true
+          title: SIRET de l'assuré
+          maxLength: 20
+        numero_contrat:
+          type: string
+          nullable: true
+          title: Numéro de contrat
+          maxLength: 20
+        reference_client:
+          type: string
+          nullable: true
+          title: Référence client
+          maxLength: 30
+        chantier_nom:
+          type: string
+          nullable: true
+          title: Nom du chantier
+          maxLength: 200
+        chantier_ville:
+          type: string
+          nullable: true
+          title: Ville du chantier
+          maxLength: 100
+        type_chantier:
+          nullable: true
+          title: Type de chantier
+          oneOf:
+          - $ref: '#/components/schemas/TypeChantierEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        modification_structure:
+          type: boolean
+          nullable: true
+          title: Modification de structure
+        usage:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/UsageEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        usage_autre_precision:
+          type: string
+          nullable: true
+          title: Précision de l'usage
+          maxLength: 200
+        chantier_atypique:
+          type: boolean
+          nullable: true
+        date_debut:
+          type: string
+          format: date
+          nullable: true
+          title: Date de début
+        date_fin:
+          type: string
+          format: date
+          nullable: true
+          title: Date de fin
+        cout_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+          title: Coût total (€)
+        description_travaux:
+          type: string
+          nullable: true
+          title: Description des travaux
+        montant_prestation:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+          title: Montant de la prestation (€)
+        type_intervention:
+          nullable: true
+          title: Type d'intervention
+          oneOf:
+          - $ref: '#/components/schemas/TypeInterventionEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        entreprise_principale_nom:
+          type: string
+          nullable: true
+          title: Entreprise principale
+          maxLength: 200
+        activite_couverte:
+          type: boolean
+          nullable: true
+          title: Activité couverte par le contrat
+        activite_non_couverte_precision:
+          type: string
+          nullable: true
+          title: Précision sur l'activité non couverte
+        travaux_standards:
+          type: boolean
+          nullable: true
+      required:
+      - created_at
+      - updated_at
+    Gabarit:
+      type: object
+      properties:
+        contenu_html:
+          type: string
+        contenu_json:
+          nullable: true
+        variables:
+          type: object
+          additionalProperties: {}
+        source:
+          type: string
+        projet_soumis_le:
+          type: string
+          format: date-time
+          nullable: true
+        assureur:
+          type: object
+          additionalProperties:
+            type: string
+        entete:
+          type: object
+          additionalProperties: {}
+      required:
+      - assureur
+      - contenu_html
+      - contenu_json
+      - entete
+      - projet_soumis_le
+      - source
+      - variables
+    Historique:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        action:
+          $ref: '#/components/schemas/ActionEnum'
+        action_libelle:
+          type: string
+          readOnly: true
+        de_statut:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/VersStatutEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        vers_statut:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/VersStatutEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        decision:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/DecisionEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        acteur:
+          allOf:
+          - $ref: '#/components/schemas/DistributeurLeger'
+          readOnly: true
+        commentaire:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Créé le
+      required:
+      - acteur
+      - action
+      - action_libelle
+      - created_at
+      - id
+    KindEnum:
+      enum:
+      - PROJET
+      - DEFINITIVE
+      type: string
+      description: |-
+        * `PROJET` - Projet d'attestation (distributeur)
+        * `DEFINITIVE` - Attestation définitive (siège)
+    LoginRequest:
+      type: object
+      description: |-
+        Login par email + mot de passe.
+
+        Ajoute le rôle dans les claims du token (informatif côté front) et le profil dans la
+        réponse pour éviter un second appel `GET /auth/me` après connexion.
+      properties:
+        email:
+          type: string
+          writeOnly: true
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - email
+      - password
+    LogoutRequest:
+      type: object
+      description: 'Corps de la déconnexion : le refresh token à révoquer.'
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+      required:
+      - refresh
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        type:
+          allOf:
+          - $ref: '#/components/schemas/TypeEnum'
+          readOnly: true
+        titre:
+          type: string
+          readOnly: true
+        message:
+          type: string
+          readOnly: true
+        payload:
+          readOnly: true
+          title: Données
+        lu:
+          type: boolean
+          readOnly: true
+          title: Lue
+        lu_le:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: Lue le
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Créé le
+        demande:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+      required:
+      - created_at
+      - demande
+      - id
+      - lu
+      - lu_le
+      - message
+      - payload
+      - titre
+      - type
+    NullEnum:
+      enum:
+      - null
+    PaginatedDemandeListeList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DemandeListe'
+    PaginatedHistoriqueList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Historique'
+    PaginatedNotificationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notification'
+    PaginatedRelanceList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Relance'
+    PaginatedSoumissionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Soumission'
+    PatchedCommentaireRequest:
+      type: object
+      properties:
+        commentaire:
+          type: string
+          maxLength: 2000
+    PatchedFDRPatchRequest:
+      type: object
+      description: 'PATCH du FDR : ajoute le champ `version` (verrou optimiste) au
+        corps.'
+      properties:
+        version:
+          type: integer
+          minimum: 1
+          writeOnly: true
+        assure_nom:
+          type: string
+          nullable: true
+          title: Nom / raison sociale
+          maxLength: 200
+        assure_adresse:
+          type: string
+          nullable: true
+          title: Adresse de l'assuré
+          maxLength: 200
+        assure_code_postal:
+          type: string
+          nullable: true
+          title: Code postal de l'assuré
+          maxLength: 8
+        assure_ville:
+          type: string
+          nullable: true
+          title: Ville de l'assuré
+          maxLength: 100
+        assure_siret:
+          type: string
+          nullable: true
+          title: SIRET de l'assuré
+          maxLength: 20
+        numero_contrat:
+          type: string
+          nullable: true
+          title: Numéro de contrat
+          maxLength: 20
+        reference_client:
+          type: string
+          nullable: true
+          title: Référence client
+          maxLength: 30
+        chantier_nom:
+          type: string
+          nullable: true
+          title: Nom du chantier
+          maxLength: 200
+        chantier_ville:
+          type: string
+          nullable: true
+          title: Ville du chantier
+          maxLength: 100
+        type_chantier:
+          nullable: true
+          title: Type de chantier
+          oneOf:
+          - $ref: '#/components/schemas/TypeChantierEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        modification_structure:
+          type: boolean
+          nullable: true
+          title: Modification de structure
+        usage:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/UsageEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        usage_autre_precision:
+          type: string
+          nullable: true
+          title: Précision de l'usage
+          maxLength: 200
+        chantier_atypique:
+          type: boolean
+          nullable: true
+        date_debut:
+          type: string
+          format: date
+          nullable: true
+          title: Date de début
+        date_fin:
+          type: string
+          format: date
+          nullable: true
+          title: Date de fin
+        cout_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+          title: Coût total (€)
+        description_travaux:
+          type: string
+          nullable: true
+          title: Description des travaux
+        montant_prestation:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+          title: Montant de la prestation (€)
+        type_intervention:
+          nullable: true
+          title: Type d'intervention
+          oneOf:
+          - $ref: '#/components/schemas/TypeInterventionEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        entreprise_principale_nom:
+          type: string
+          nullable: true
+          title: Entreprise principale
+          maxLength: 200
+        activite_couverte:
+          type: boolean
+          nullable: true
+          title: Activité couverte par le contrat
+        activite_non_couverte_precision:
+          type: string
+          nullable: true
+          title: Précision sur l'activité non couverte
+        travaux_standards:
+          type: boolean
+          nullable: true
+    PatchedModifierTypePieceRequest:
+      type: object
+      properties:
+        type_piece:
+          type: string
+          minLength: 1
+    PieceJointe:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        type_piece:
+          type: string
+          readOnly: true
+        libelle_type:
+          type: string
+          readOnly: true
+        nom_fichier:
+          type: string
+          readOnly: true
+          title: Nom de la pièce
+        nom_original:
+          type: string
+          readOnly: true
+          title: Nom d'origine
+        mime:
+          type: string
+          readOnly: true
+          title: Type MIME
+        taille:
+          type: integer
+          readOnly: true
+          title: Taille (octets)
+        sha256:
+          type: string
+          readOnly: true
+          title: Empreinte SHA-256
+        deposee_par:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Créé le
+      required:
+      - created_at
+      - deposee_par
+      - id
+      - libelle_type
+      - mime
+      - nom_fichier
+      - nom_original
+      - sha256
+      - taille
+      - type_piece
+    PrevisualiserRequest:
+      type: object
+      properties:
+        contenu_html:
+          type: string
+          maxLength: 200000
+    RefuserRequest:
+      type: object
+      properties:
+        motif:
+          type: string
+          minLength: 10
+          maxLength: 2000
+        commentaire:
+          type: string
+          maxLength: 2000
+      required:
+      - motif
+    Relance:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        message:
+          type: string
+        destinataires: {}
+        email_ok:
+          type: boolean
+          title: Email envoyé
+        envoyee_par:
+          allOf:
+          - $ref: '#/components/schemas/DistributeurLeger'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Créé le
+      required:
+      - created_at
+      - envoyee_par
+      - id
+    RelancerRequest:
+      type: object
+      properties:
+        message:
+          type: string
+          maxLength: 1000
+    RoleEnum:
+      enum:
+      - DISTRIBUTEUR
+      - SIEGE
+      type: string
+      description: |-
+        * `DISTRIBUTEUR` - Distributeur (agent général / courtier)
+        * `SIEGE` - Siège
+    Soumission:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        numero:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          title: Numéro d'envoi
+        fdr_snapshot:
+          title: FDR déclaré
+        pieces_snapshot:
+          title: Pièces jointes
+        scoring_snapshot:
+          title: Scoring
+        commentaire_distributeur:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Créé le
+      required:
+      - created_at
+      - fdr_snapshot
+      - id
+      - numero
+      - pieces_snapshot
+      - scoring_snapshot
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+    TokenRefreshRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+      required:
+      - refresh
+    TypeChantierEnum:
+      enum:
+      - CONSTRUCTION_NEUVE
+      - RENOVATION
+      type: string
+      description: |-
+        * `CONSTRUCTION_NEUVE` - Construction neuve
+        * `RENOVATION` - Rénovation
+    TypeEnum:
+      enum:
+      - DEMANDE_ENVOYEE
+      - DEMANDE_RENVOYEE
+      - RELANCE
+      - COMPLEMENTS_DEMANDES
+      - DEMANDE_TRAITEE
+      - PROJET_ATTESTATION_SOUMIS
+      - PROJET_ATTESTATION_A_CORRIGER
+      - ATTESTATION_DISPONIBLE
+      type: string
+      description: |-
+        * `DEMANDE_ENVOYEE` - Demande envoyée
+        * `DEMANDE_RENVOYEE` - Demande renvoyée après compléments
+        * `RELANCE` - Relance
+        * `COMPLEMENTS_DEMANDES` - Compléments demandés
+        * `DEMANDE_TRAITEE` - Demande traitée
+        * `PROJET_ATTESTATION_SOUMIS` - Projet d'attestation soumis
+        * `PROJET_ATTESTATION_A_CORRIGER` - Projet d'attestation à corriger
+        * `ATTESTATION_DISPONIBLE` - Attestation disponible
+    TypeInterventionEnum:
+      enum:
+      - ENTREPRISE_PRINCIPALE
+      - SOUS_TRAITANT
+      type: string
+      description: |-
+        * `ENTREPRISE_PRINCIPALE` - Entreprise principale
+        * `SOUS_TRAITANT` - Sous-traitant
+    UploadPieceRequest:
+      type: object
+      description: 'Corps multipart de l''upload : le fichier et son type.'
+      properties:
+        fichier:
+          type: string
+          format: binary
+        type_piece:
+          type: string
+          minLength: 1
+      required:
+      - fichier
+      - type_piece
+    UsageEnum:
+      enum:
+      - HABITATION
+      - BUREAU
+      - COMMERCE
+      - AUTRE
+      type: string
+      description: |-
+        * `HABITATION` - Habitation
+        * `BUREAU` - Bureau
+        * `COMMERCE` - Commerce
+        * `AUTRE` - Autre
+    Utilisateur:
+      type: object
+      description: Profil de l'utilisateur connecté (lecture seule).
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+          title: Adresse email
+        first_name:
+          type: string
+          readOnly: true
+          title: Prénom
+        last_name:
+          type: string
+          readOnly: true
+          title: Nom
+        nom_affichage:
+          type: string
+          readOnly: true
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          readOnly: true
+          title: Rôle
+        organisation:
+          type: string
+          readOnly: true
+        code_distributeur:
+          type: string
+          readOnly: true
+      required:
+      - code_distributeur
+      - email
+      - first_name
+      - id
+      - last_name
+      - nom_affichage
+      - organisation
+      - role
+    ValiderAttestationRequest:
+      type: object
+      properties:
+        forcer:
+          type: boolean
+          default: false
+        justification:
+          type: string
+          default: ''
+          maxLength: 2000
+    VersStatutEnum:
+      enum:
+      - BROUILLON
+      - EN_COURS
+      - A_COMPLETER
+      - TRAITE
+      type: string
+      description: |-
+        * `BROUILLON` - Brouillon
+        * `EN_COURS` - En cours d'instruction
+        * `A_COMPLETER` - Compléments demandés
+        * `TRAITE` - Traitée
+tags:
+- name: auth
+  description: Authentification JWT
+- name: demandes
+  description: Demandes d'attestation et FDR
+- name: pieces
+  description: Pièces justificatives
+- name: attestations
+  description: Projets et attestations définitives, analyse IA
+- name: notifications
+  description: Notifications in-app
+- name: reporting
+  description: Indicateurs
+- name: referentiels
+  description: Valeurs de référence pour le formulaire dynamique
