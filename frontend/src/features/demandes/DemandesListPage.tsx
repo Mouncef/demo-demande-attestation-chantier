@@ -1,4 +1,4 @@
-// Écran 1 : liste des demandes avec filtres statut / décision, recherche, tri et pagination.
+// Écran 1 : liste des demandes avec filtres statut / décision, recherche, tri, pagination, relance.
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCreerDemande, useDemandes, useSupprimerDemande } from '@/api/demandes';
@@ -21,6 +21,7 @@ import {
   Spinner,
   useToast,
 } from '@/design-system/components';
+import { RelanceButton } from './RelanceButton';
 
 const STATUTS = Object.keys(LIBELLES_STATUT) as Statut[];
 const DECISIONS = Object.keys(LIBELLES_DECISION) as NonNullable<Decision>[];
@@ -198,6 +199,13 @@ export function DemandesListPage() {
                     <td>{formatDate(d.submitted_at)}</td>
                     <td onClick={(e) => e.stopPropagation()}>
                       <div className="actions" style={{ justifyContent: 'flex-end' }}>
+                        {d.actions_possibles.includes('relancer') && (
+                          <RelanceButton
+                            demandeId={d.id}
+                            prochaine={d.prochaine_relance_possible}
+                            taille="sm"
+                          />
+                        )}
                         {d.actions_possibles.includes('supprimer') && (
                           <Button
                             variante="danger"

@@ -1,4 +1,4 @@
-// Hooks React Query pour les demandes, le FDR, la complétude, le scoring et les référentiels.
+// Hooks React Query pour les demandes, le FDR, la complétude, le scoring et les actions.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from './client';
 import type {
@@ -9,7 +9,9 @@ import type {
   Historique,
   Pagination,
   Referentiels,
+  Relance,
   Scoring,
+  Soumission,
 } from './types';
 
 export const cles = {
@@ -18,6 +20,8 @@ export const cles = {
   completude: (id: string) => ['demande', id, 'completude'] as const,
   scoring: (id: string) => ['demande', id, 'scoring'] as const,
   historique: (id: string) => ['demande', id, 'historique'] as const,
+  relances: (id: string) => ['demande', id, 'relances'] as const,
+  soumissions: (id: string) => ['demande', id, 'soumissions'] as const,
   referentiels: ['referentiels'] as const,
 };
 
@@ -79,6 +83,20 @@ export function useHistorique(id: string) {
   });
 }
 
+export function useRelances(id: string) {
+  return useQuery({
+    queryKey: cles.relances(id),
+    queryFn: async () => (await api.get<Relance[]>(`/demandes/${id}/relances/`)).data,
+  });
+}
+
+export function useSoumissions(id: string) {
+  return useQuery({
+    queryKey: cles.soumissions(id),
+    queryFn: async () => (await api.get<Soumission[]>(`/demandes/${id}/soumissions/`)).data,
+  });
+}
+
 export function useReferentiels() {
   return useQuery({
     queryKey: cles.referentiels,
@@ -93,6 +111,7 @@ export function useInvaliderDemande() {
   return (id: string) => {
     void qc.invalidateQueries({ queryKey: ['demande', id] });
     void qc.invalidateQueries({ queryKey: ['demandes'] });
+    void qc.invalidateQueries({ queryKey: ['notifications'] });
   };
 }
 
@@ -117,6 +136,34 @@ export function useEnregistrerFdr(id: string) {
   return useMutation({
     mutationFn: async (payload: Partial<FDR> & { version: number }) =>
       (await api.patch<DemandeDetail>(`/demandes/${id}/fdr/`, payload)).data,
+    onSuccess: () => invalider(id),
+  });
+}
+
+/** Action générique POST `/demandes/{id}/{action}/` renvoyant le détail mis à jour. */
+export function useActionDemande(id: string, action: string) {
+  const invalider = useInvaliderDemande();
+  return useMutation({
+    mutationFn: async (payload: Record<string, unknown> = {}) =>
+      (await api.post<DemandeDetail>(`/demandes/${id}/${action}/`, payload)).data,
+    onSuccess: () => invalider(id),
+  });
+}
+
+export function useRelancer(id: string) {
+  const invalider = useInvaliderDemande();
+  return useMutation({
+    mutationFn: async (message: string) =>
+      (await api.post<Relance>(`/demandes/${id}/relancer/`, { message })).data,
+    onSuccess: () => invalider(id),
+  });
+}
+
+export function useCommentaire(id: string) {
+  const invalider = useInvaliderDemande();
+  return useMutation({
+    mutationFn: async (commentaire: string) =>
+      (await api.patch<DemandeDetail>(`/demandes/${id}/commentaire/`, { commentaire })).data,
     onSuccess: () => invalider(id),
   });
 }

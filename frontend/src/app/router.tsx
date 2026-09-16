@@ -5,6 +5,7 @@ import { RequireAuth } from './RequireAuth';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { DemandesListPage } from '@/features/demandes/DemandesListPage';
 import { DemandeDetailPage } from '@/features/demandes/DemandeDetailPage';
+import { NotificationsPage } from '@/features/notifications/NotificationsPage';
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -19,6 +20,7 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to="/demandes" replace /> },
       { path: 'demandes', element: <DemandesListPage /> },
       { path: 'demandes/:id', element: <DemandeDetailPage /> },
+      { path: 'notifications', element: <NotificationsPage /> },
       { path: '*', element: <Navigate to="/demandes" replace /> },
     ],
   },

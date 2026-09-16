@@ -62,7 +62,16 @@ export interface FDR {
   travaux_standards: boolean | null;
 }
 
-export type ActionPossible = 'modifier_fdr' | 'gerer_pieces' | 'supprimer';
+export type ActionPossible =
+  | 'modifier_fdr'
+  | 'gerer_pieces'
+  | 'envoyer'
+  | 'supprimer'
+  | 'relancer'
+  | 'accepter'
+  | 'refuser'
+  | 'demander_complements'
+  | 'commenter';
 
 export interface DemandeListe {
   id: string;
@@ -81,6 +90,7 @@ export interface DemandeListe {
   created_at: string;
   updated_at: string;
   actions_possibles: ActionPossible[];
+  prochaine_relance_possible: string | null;
 }
 
 export interface Indicateur {
@@ -109,6 +119,8 @@ export interface DemandeDetail extends DemandeListe {
   first_submitted_at: string | null;
   decided_by: UtilisateurLeger | null;
   scoring_snapshot: Scoring | null;
+  nb_relances: number;
+  derniere_relance_le: string | null;
 }
 
 export interface Pagination<T> {
@@ -173,6 +185,37 @@ export interface Historique {
   created_at: string;
 }
 
+export interface Relance {
+  id: number;
+  message: string;
+  destinataires: string[];
+  email_ok: boolean;
+  envoyee_par: UtilisateurLeger;
+  created_at: string;
+}
+
+export interface Soumission {
+  id: number;
+  numero: number;
+  fdr_snapshot: FDR;
+  pieces_snapshot: unknown[];
+  scoring_snapshot: Scoring;
+  commentaire_distributeur: string;
+  created_at: string;
+}
+
+export interface Notification {
+  id: string;
+  type: string;
+  titre: string;
+  message: string;
+  payload: { demande_id?: string; reference?: string; statut?: Statut; decision?: Decision };
+  lu: boolean;
+  lu_le: string | null;
+  created_at: string;
+  demande: string | null;
+}
+
 export interface Choix {
   code: string;
   libelle: string;
@@ -186,6 +229,7 @@ export interface Referentiels {
   types_intervention: Choix[];
   types_pieces: (Choix & { description: string })[];
   seuil_gros_chantier: string;
+  relance_cooldown_hours: number;
   upload: { max_bytes: number; extensions: string[] };
 }
 

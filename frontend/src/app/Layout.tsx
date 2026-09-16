@@ -1,6 +1,7 @@
-// Gabarit de page : en-tête AXA (logo, diagonale rouge), navigation et utilisateur connecté.
+// Gabarit de page : en-tête AXA (logo, diagonale rouge), navigation, cloche de notifications.
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
+import { NotificationsBell } from '@/features/notifications/NotificationsBell';
 import { Button } from '@/design-system/components';
 
 export function Layout() {
@@ -22,6 +23,7 @@ export function Layout() {
             <path d="M16 0h6L6 44H0z" fill="#ff1721" />
           </svg>
           <div className="header__right">
+            <NotificationsBell />
             <div className="user">
               <span className="user__name">{utilisateur?.nom_affichage}</span>
               <span className="user__role">{utilisateur?.role === 'SIEGE' ? 'Siège' : 'Distributeur'}</span>

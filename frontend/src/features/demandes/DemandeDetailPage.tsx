@@ -1,15 +1,26 @@
-// Détail d'une demande : parcours en étapes pour le distributeur (FDR → risque & pièces → historique),
-// vue dossier pour le siège. Une étape n'est accessible que si les précédentes sont valides.
+// Détail d'une demande : parcours en étapes pour le distributeur (FDR → risque & pièces →
+// validation & envoi), vue instruction pour le siège, historique et soumissions.
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { cles, useCompletude, useDemande, useHistorique, useSupprimerDemande } from '@/api/demandes';
+import {
+  cles,
+  useCompletude,
+  useDemande,
+  useHistorique,
+  useSoumissions,
+  useSupprimerDemande,
+} from '@/api/demandes';
+import { telechargerFichier } from '@/api/client';
 import type { DemandeDetail } from '@/api/types';
 import { useAuth } from '@/features/auth/AuthContext';
 import { FdrForm } from '@/features/fdr/FdrForm';
 import { RisquePiecesStep } from '@/features/pieces/RisquePiecesStep';
+import { ValidationStep } from '@/features/validation/ValidationStep';
+import { TraitementPanel } from '@/features/siege/TraitementPanel';
 import { formatDateHeure, formatMontant } from '@/lib/format';
 import {
+  Alert,
   BadgeDecision,
   BadgeNiveau,
   BadgeStatut,
@@ -23,8 +34,9 @@ import {
   Tabs,
   useToast,
 } from '@/design-system/components';
+import { RelanceButton } from './RelanceButton';
 
-type Etape = 'fdr' | 'pieces' | 'historique';
+type Etape = 'fdr' | 'pieces' | 'validation' | 'historique';
 
 export function DemandeDetailPage() {
   const { id = '' } = useParams();
@@ -74,14 +86,24 @@ function VueDistributeur({ demande }: { demande: DemandeDetail }) {
   const peut = (a: string) => demande.actions_possibles.includes(a as never);
   const editable = peut('modifier_fdr');
 
-  // --- Verrouillage séquentiel : l'étape des pièces n'est accessible que si le FDR est valide. ---
+  // --- Verrouillage séquentiel : une étape n'est accessible que si les précédentes sont valides. ---
+  // Tant que la demande est éditable, on s'appuie sur la complétude calculée par le backend ; une fois
+  // envoyée, le FDR et les pièces ont été validés à l'envoi : les étapes 1 à 3 sont acquises.
   const fdrValide = !editable || Boolean(completude?.fdr_valide);
+  const dossierComplet = !editable || Boolean(completude?.complet);
+  const envoyee = demande.nb_soumissions > 0;
   const acces: Record<Etape, { ok: boolean; motif: string }> = {
     fdr: { ok: true, motif: '' },
     pieces: { ok: fdrValide, motif: 'Complétez et validez le formulaire FDR avant de passer aux pièces.' },
+    validation: {
+      ok: fdrValide && dossierComplet,
+      motif: `Déposez toutes les pièces requises avant de continuer${completude?.manquants.length ? ` (${completude.manquants.length} manquante(s))` : ''}.`,
+    },
     historique: { ok: true, motif: '' },
   };
-  const etapeDemandee: Etape = (params.get('etape') as Etape) || 'fdr';
+
+  const etapeParDefaut: Etape = editable ? 'fdr' : 'validation';
+  const etapeDemandee = (params.get('etape') as Etape) || etapeParDefaut;
   const etape: Etape = acces[etapeDemandee]?.ok ? etapeDemandee : 'fdr';
   const allerDirect = (e: string) => setParams({ etape: e });
   /** Navigation contrôlée : refuse (avec explication) une étape dont les prérequis ne sont pas remplis. */
@@ -98,10 +120,12 @@ function VueDistributeur({ demande }: { demande: DemandeDetail }) {
   useEffect(() => {
     if (editable && !completude) return;
     if (!acces[etapeDemandee]?.ok) setParams({ etape: 'fdr' }, { replace: true });
+    else if (demande.statut === 'A_COMPLETER' && !params.get('etape'))
+      setParams({ etape: 'fdr' }, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `acces` est recalculé à chaque rendu
-  }, [etapeDemandee, editable, completude, setParams]);
+  }, [etapeDemandee, editable, completude, demande.statut, params, setParams]);
 
-  const etapes = [
+  const etapes: { cle: string; libelle: string; termine?: boolean; desactive?: boolean }[] = [
     { cle: 'fdr', libelle: 'Formulaire FDR', termine: Boolean(completude?.fdr_valide) },
     {
       cle: 'pieces',
@@ -109,8 +133,11 @@ function VueDistributeur({ demande }: { demande: DemandeDetail }) {
       termine: Boolean(completude?.fdr_valide && completude?.complet),
       desactive: !acces.pieces.ok,
     },
+    { cle: 'validation', libelle: 'Validation & envoi', termine: envoyee, desactive: !acces.validation.ok },
     { cle: 'historique', libelle: 'Historique' },
   ];
+
+  // Navigation Précédent / Suivant entre les étapes (ordre du stepper), soumise au verrouillage.
   const ordre = etapes.map((e) => e.cle);
   const index = ordre.indexOf(etape);
   const precedent = index > 0 ? () => allerDirect(ordre[index - 1]) : undefined;
@@ -119,12 +146,43 @@ function VueDistributeur({ demande }: { demande: DemandeDetail }) {
   return (
     <>
       <EnTete demande={demande}>
+        {peut('relancer') && (
+          <RelanceButton demandeId={demande.id} prochaine={demande.prochaine_relance_possible} />
+        )}
         {peut('supprimer') && (
           <Button variante="danger" onClick={() => setConfirmerSuppression(true)}>
             🗑 Supprimer
           </Button>
         )}
       </EnTete>
+
+      {demande.statut === 'A_COMPLETER' && (
+        <Alert type="warning">
+          <strong>Le siège demande des éléments complémentaires :</strong> {demande.message_complements}
+          <div className="small">
+            Complétez le FDR et/ou les pièces, puis renvoyez la demande depuis l'étape « Validation & envoi ».
+          </div>
+        </Alert>
+      )}
+      {demande.statut === 'EN_COURS' && (
+        <Alert type="info">
+          Demande en cours d'instruction par le siège depuis le {formatDateHeure(demande.submitted_at)} (envoi
+          n°{demande.nb_soumissions}).
+        </Alert>
+      )}
+      {demande.statut === 'TRAITE' && demande.decision === 'REFUSEE' && (
+        <Alert type="danger">
+          <strong>Demande refusée par le siège.</strong> Motif : {demande.motif_refus}
+        </Alert>
+      )}
+      {demande.statut === 'TRAITE' && demande.decision === 'ACCEPTEE' && (
+        <Alert type="success">
+          <strong>Demande acceptée par le siège.</strong>
+          {demande.commentaire_siege && (
+            <div className="small">Commentaire du siège : {demande.commentaire_siege}</div>
+          )}
+        </Alert>
+      )}
 
       <Stepper etapes={etapes} courante={etape} onChange={aller} />
 
@@ -144,6 +202,15 @@ function VueDistributeur({ demande }: { demande: DemandeDetail }) {
         />
       )}
       {etape === 'pieces' && <RisquePiecesStep demande={demande} lectureSeule={!peut('gerer_pieces')} />}
+      {etape === 'validation' && (
+        <ValidationStep
+          demande={demande}
+          lectureSeule={!peut('envoyer')}
+          onEnvoye={() => allerDirect('historique')}
+          // Depuis le récapitulatif, « corriger le FDR » ouvre le formulaire avec les erreurs signalées.
+          onAllerEtape={(e) => (e === 'fdr' ? setParams({ etape: 'fdr', signaler: '1' }) : allerDirect(e))}
+        />
+      )}
       {etape === 'historique' && <HistoriquePanel demande={demande} />}
       {etape !== 'fdr' && <StepNav onPrecedent={precedent} onSuivant={suivant} />}
 
@@ -194,21 +261,43 @@ function VueSiege({ demande }: { demande: DemandeDetail }) {
   return (
     <>
       <EnTete demande={demande} />
-      <Card titre="Synthèse" variante="plain" className="mb-2">
-        <div className="recap">
-          <dl>
-            <dt>Distributeur</dt>
-            <dd>
-              {demande.distributeur.nom_affichage}
-              <div className="small muted">{demande.distributeur.organisation}</div>
-            </dd>
-            <dt>Créée le</dt>
-            <dd>{formatDateHeure(demande.created_at)}</dd>
-            <dt>Commentaire distributeur</dt>
-            <dd>{demande.commentaire_distributeur || '—'}</dd>
-          </dl>
-        </div>
-      </Card>
+      <div className="grid-2 mb-2" style={{ gridTemplateColumns: 'minmax(0, 2fr) minmax(300px, 1fr)' }}>
+        <TraitementPanel demande={demande} />
+        <Card titre="Synthèse" variante="plain">
+          <div className="recap">
+            <dl>
+              <dt>Distributeur</dt>
+              <dd>
+                {demande.distributeur.nom_affichage}
+                <div className="small muted">{demande.distributeur.organisation}</div>
+              </dd>
+              <dt>Envoyée le</dt>
+              <dd>
+                {formatDateHeure(demande.submitted_at)} (n°{demande.nb_soumissions})
+              </dd>
+              <dt>Relances</dt>
+              <dd>
+                {demande.nb_relances}
+                {demande.derniere_relance_le && (
+                  <span className="small muted">
+                    {' '}
+                    · dernière le {formatDateHeure(demande.derniere_relance_le)}
+                  </span>
+                )}
+              </dd>
+              <dt>Commentaire distributeur</dt>
+              <dd>{demande.commentaire_distributeur || '—'}</dd>
+            </dl>
+          </div>
+          {demande.scoring_snapshot && (
+            <div className="mt-2">
+              <BadgeNiveau niveau={demande.scoring_snapshot.niveau} />{' '}
+              <strong>{demande.scoring_snapshot.score}/100</strong>
+              <p className="small mt-1">{demande.scoring_snapshot.synthese}</p>
+            </div>
+          )}
+        </Card>
+      </div>
       <Tabs onglets={onglets} actif={onglet} onChange={(o) => setParams({ onglet: o })} />
       {onglet === 'dossier' && <FdrForm demande={demande} lectureSeule />}
       {onglet === 'pieces' && <RisquePiecesStep demande={demande} lectureSeule />}
@@ -219,23 +308,70 @@ function VueSiege({ demande }: { demande: DemandeDetail }) {
 
 function HistoriquePanel({ demande }: { demande: DemandeDetail }) {
   const { data: historique } = useHistorique(demande.id);
+  const { data: soumissions } = useSoumissions(demande.id);
+  const toast = useToast();
   return (
-    <Card titre="🕓 Historique des actions">
-      {!historique ? (
-        <Spinner />
-      ) : (
-        <ul className="timeline">
-          {historique.map((h) => (
-            <li key={h.id}>
-              <strong>{h.action_libelle}</strong>{' '}
-              <span className="small muted">
-                — {formatDateHeure(h.created_at)} · {h.acteur.nom_affichage}
-              </span>
-              {h.commentaire && <div className="small">{h.commentaire}</div>}
-            </li>
-          ))}
-        </ul>
-      )}
-    </Card>
+    <div className="grid-2">
+      <Card titre="🕓 Historique des actions">
+        {!historique ? (
+          <Spinner />
+        ) : (
+          <ul className="timeline">
+            {historique.map((h) => (
+              <li key={h.id}>
+                <strong>{h.action_libelle}</strong>{' '}
+                <span className="small muted">
+                  — {formatDateHeure(h.created_at)} · {h.acteur.nom_affichage}
+                </span>
+                {h.commentaire && <div className="small">{h.commentaire}</div>}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+      <Card titre="📑 Soumissions au siège (FDR PDF)">
+        {!soumissions ? (
+          <Spinner />
+        ) : soumissions.length === 0 ? (
+          <p className="muted">Aucun envoi pour le moment.</p>
+        ) : (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>N°</th>
+                <th>Date</th>
+                <th>Risque</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {soumissions.map((s) => (
+                <tr key={s.id}>
+                  <td>{s.numero}</td>
+                  <td>{formatDateHeure(s.created_at)}</td>
+                  <td>
+                    <BadgeNiveau niveau={s.scoring_snapshot.niveau} />
+                  </td>
+                  <td>
+                    <Button
+                      variante="secondary"
+                      taille="sm"
+                      onClick={() =>
+                        telechargerFichier(
+                          `/demandes/${demande.id}/soumissions/${s.numero}/pdf/`,
+                          `FDR-${demande.reference}-${s.numero}.pdf`,
+                        ).catch((e) => toast.erreur(e))
+                      }
+                    >
+                      📄 FDR PDF
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </Card>
+    </div>
   );
 }

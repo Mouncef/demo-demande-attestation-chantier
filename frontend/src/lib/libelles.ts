@@ -38,7 +38,9 @@ export const LIBELLES_INTERVENTION: Record<TypeIntervention, string> = {
 
 export const LIBELLES_ERREURS_API: Record<string, string> = {
   TRANSITION_INVALIDE: "Cette action n'est pas possible dans l'état actuel de la demande.",
+  DOSSIER_INCOMPLET: 'Le dossier est incomplet : des pièces requises manquent.',
   CONFLIT_VERSION: 'La demande a été modifiée entre-temps. Les données ont été rechargées.',
+  RELANCE_TROP_TOT: 'Une relance a déjà été envoyée : le délai de 24 h n’est pas écoulé.',
   INTERDIT: "Vous n'avez pas les droits nécessaires pour cette action.",
   INTROUVABLE: 'Ressource introuvable ou inaccessible.',
   NON_AUTHENTIFIE: 'Votre session a expiré, veuillez vous reconnecter.',
