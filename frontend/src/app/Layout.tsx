@@ -17,6 +17,7 @@ export function Layout() {
           </NavLink>
           <nav className="nav" aria-label="Navigation principale">
             <NavLink to="/demandes">Demandes</NavLink>
+            <NavLink to="/reporting">Reporting</NavLink>
           </nav>
           {/* Mini Switch : signature AXA issue du logo, une seule fois par écran. */}
           <svg className="header__switch" viewBox="0 0 22 44" aria-hidden focusable="false">
@@ -46,7 +47,8 @@ export function Layout() {
         <Outlet />
       </main>
       <footer className="footer">
-        Plateforme interne de gestion des demandes d'attestation de chantier · démonstration
+        Plateforme interne de gestion des demandes d'attestation de chantier – test technique AXA ·
+        démonstration
       </footer>
     </div>
   );

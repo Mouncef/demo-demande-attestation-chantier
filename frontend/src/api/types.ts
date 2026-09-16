@@ -328,6 +328,48 @@ export interface Referentiels {
   upload: { max_bytes: number; extensions: string[] };
 }
 
+export type PeriodeReporting = '30' | '90' | '365' | 'tout';
+
+export interface LigneMensuelle {
+  mois: string;
+  total: number;
+  acceptees: number;
+  refusees: number;
+  en_instruction: number;
+  brouillons: number;
+}
+
+export interface LigneDistributeur {
+  nom: string;
+  total: number;
+  acceptees: number;
+  refusees: number;
+  en_instruction: number;
+  brouillons: number;
+}
+
+export interface Reporting {
+  periode: PeriodeReporting;
+  total: number;
+  par_statut: Record<Statut, number>;
+  acceptees: number;
+  refusees: number;
+  en_instruction: number;
+  taux_acceptation: number | null;
+  delai_moyen_traitement_jours: number | null;
+  delai_moyen_decision_jours: number | null;
+  delai_moyen_attestation_jours: number | null;
+  par_mois: LigneMensuelle[];
+  par_niveau_risque: Record<NiveauRisque | 'NON_EVALUE', number>;
+  circuit_attestation: { acceptees: number; projets_soumis: number; attestations_etablies: number };
+  /** Siège : en cours d'instruction + projets soumis ; distributeur : compléments demandés + projets à corriger. */
+  a_traiter: number;
+  /** Siège uniquement : distributeurs les plus actifs (le reste plié dans « Autres »). */
+  par_distributeur?: LigneDistributeur[];
+  /** Distributeur uniquement : assurés les plus fréquents (même structure). */
+  par_assure?: LigneDistributeur[];
+}
+
 /** Format d'erreur normalisé renvoyé par le backend. */
 export interface ErreurApi {
   code: string;

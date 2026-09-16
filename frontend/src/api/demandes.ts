@@ -8,8 +8,10 @@ import type {
   FDR,
   Historique,
   Pagination,
+  PeriodeReporting,
   Referentiels,
   Relance,
+  Reporting,
   Scoring,
   Soumission,
 } from './types';
@@ -23,6 +25,7 @@ export const cles = {
   relances: (id: string) => ['demande', id, 'relances'] as const,
   soumissions: (id: string) => ['demande', id, 'soumissions'] as const,
   referentiels: ['referentiels'] as const,
+  reporting: (periode: PeriodeReporting = 'tout') => ['reporting', periode] as const,
 };
 
 export interface FiltresDemandes {
@@ -108,6 +111,15 @@ export function useReferentiels() {
   });
 }
 
+export function useReporting(periode: PeriodeReporting = 'tout') {
+  return useQuery({
+    queryKey: cles.reporting(periode),
+    queryFn: async () => (await api.get<Reporting>('/reporting/synthese/', { params: { periode } })).data,
+    // Pendant un changement de période, on conserve les données précédentes (pas de squelette).
+    placeholderData: (precedent) => precedent,
+  });
+}
+
 /** Invalide toutes les données dérivées d'une demande après une action. */
 export function useInvaliderDemande() {
   const qc = useQueryClient();
@@ -115,6 +127,7 @@ export function useInvaliderDemande() {
     void qc.invalidateQueries({ queryKey: ['demande', id] });
     void qc.invalidateQueries({ queryKey: ['demandes'] });
     void qc.invalidateQueries({ queryKey: ['notifications'] });
+    void qc.invalidateQueries({ queryKey: ['reporting'] });
   };
 }
 

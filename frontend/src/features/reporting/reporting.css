@@ -1,0 +1,134 @@
+/* Page Reporting : grille, cartes de graphiques, légende, info-bulle, filtres. */
+.reporting-filtres {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.reporting-grille {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.reporting-grille .chart-card--large {
+  grid-column: 1 / -1;
+}
+@media (max-width: 800px) {
+  .reporting-grille {
+    grid-template-columns: 1fr;
+  }
+}
+.chart-card {
+  transition: opacity 200ms ease;
+}
+.chart-card--rechargement {
+  opacity: 0.55;
+}
+.chart-card__entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+.chart-card__entete h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+.chart-card__bascule {
+  display: inline-flex;
+  border: 1px solid var(--axa-gray-300);
+}
+.chart-card__bascule button {
+  border: none;
+  background: #fff;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--axa-gray-700);
+  cursor: pointer;
+}
+.chart-card__bascule button[aria-selected='true'] {
+  background: var(--axa-blue);
+  color: #fff;
+}
+.chart-card__table td,
+.chart-card__table th {
+  font-variant-numeric: tabular-nums;
+}
+/* Conteneur : la hauteur inclut la bande de l'axe X (pas de défilement interne). */
+.chart-zone {
+  width: 100%;
+  height: 260px;
+}
+.chart-zone--haute {
+  height: 300px;
+}
+.chart-legende {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--axa-gray-700);
+}
+.chart-legende__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.chart-legende__swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  display: inline-block;
+}
+.chart-tooltip {
+  background: #fff;
+  border: 1px solid var(--axa-gray-200);
+  box-shadow: var(--shadow-2);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  color: var(--axa-gray-900);
+  min-width: 160px;
+}
+.chart-tooltip__titre {
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+  color: var(--axa-blue);
+}
+.chart-tooltip__ligne {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.1rem 0;
+}
+.chart-tooltip__cle {
+  width: 12px;
+  height: 3px;
+  border-radius: 2px;
+  display: inline-block;
+}
+.chart-tooltip__ligne strong {
+  min-width: 2.5ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+/* Tuile KPI avec sparkline */
+.kpi--sparkline {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+.kpi__spark {
+  width: 110px;
+  height: 40px;
+  flex-shrink: 0;
+}
+.entonnoir-etape {
+  font-size: 0.8rem;
+  color: var(--axa-gray-700);
+}
