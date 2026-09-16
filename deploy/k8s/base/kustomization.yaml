@@ -1,0 +1,22 @@
+# Base Kustomize : namespace demo-axa, tous les services du docker compose (PostgreSQL, Mailpit, backend, frontend),
+# exposition Traefik + cert-manager. À déployer via l'overlay `overlays/vps` (make k8s-deploy).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: demo-axa
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - postgres.yaml
+  - mailpit.yaml
+  - backend.yaml
+  - frontend.yaml
+  - ingress.yaml
+  - networkpolicy.yaml
+labels:
+  - includeSelectors: true
+    pairs:
+      app.kubernetes.io/part-of: demo-axa
+configMapGenerator:
+  - name: frontend-nginx
+    files:
+      - default.conf=nginx.conf

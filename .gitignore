@@ -31,3 +31,6 @@ backend/staticfiles/
 .DS_Store
 Thumbs.db
 .env.local
+
+# --- Déploiement Kubernetes ---
+deploy/k8s/secret.env

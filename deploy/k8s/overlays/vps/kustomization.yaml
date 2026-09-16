@@ -1,0 +1,11 @@
+# Overlay du cluster VPS IONOS (namespace demo-axa, demo.zaghratmouncef.com).
+# Le tag des images est fixé au déploiement : `make k8s-deploy TAG=<tag>`.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+images:
+  - name: ghcr.io/mouncef/demo-attestations-backend
+    newTag: latest
+  - name: ghcr.io/mouncef/demo-attestations-frontend
+    newTag: latest

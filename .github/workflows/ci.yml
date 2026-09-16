@@ -1,0 +1,129 @@
+# Intégration continue : lint + tests backend (PostgreSQL de service), lint + typage + tests + build frontend,
+# validation des manifestes Kubernetes, puis construction et publication des images sur GHCR (main et tags v*).
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_BACKEND: ghcr.io/mouncef/demo-attestations-backend
+  IMAGE_FRONTEND: ghcr.io/mouncef/demo-attestations-frontend
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: attestations
+          POSTGRES_USER: attestations
+          POSTGRES_PASSWORD: attestations
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U attestations" --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.test
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: attestations
+      POSTGRES_USER: attestations
+      POSTGRES_PASSWORD: attestations
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Dépendances système (WeasyPrint, libmagic)
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libpango-1.0-0 libpangoft2-1.0-0 libmagic1 fonts-liberation
+      - run: pip install ".[dev]"
+      - run: ruff check apps config tests && ruff format --check apps config tests
+      - run: python -m pytest --cov=apps --cov-report=term-missing -q
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  k8s:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Valider les manifestes Kubernetes
+        run: |
+          docker run --rm -v "$PWD/deploy/k8s:/k8s:ro" registry.k8s.io/kustomize/kustomize:v5.4.3 build /k8s/overlays/vps > /tmp/vps.yaml
+          docker run --rm -v /tmp:/tmp:ro ghcr.io/yannh/kubeconform:latest -strict -summary -ignore-missing-schemas /tmp/vps.yaml
+
+  images:
+    # Publication des images uniquement depuis main ou un tag (pas sur les pull requests).
+    if: github.event_name == 'push'
+    needs: [backend, frontend, k8s]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Tags de l'image backend
+        id: meta-backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_BACKEND }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix=sha-
+            type=semver,pattern={{version}}
+      - name: Construire et publier le backend
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          push: true
+          tags: ${{ steps.meta-backend.outputs.tags }}
+          labels: ${{ steps.meta-backend.outputs.labels }}
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,scope=backend,mode=max
+      - name: Tags de l'image frontend
+        id: meta-frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_FRONTEND }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix=sha-
+            type=semver,pattern={{version}}
+      - name: Construire et publier le frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          target: prod
+          push: true
+          tags: ${{ steps.meta-frontend.outputs.tags }}
+          labels: ${{ steps.meta-frontend.outputs.labels }}
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,scope=frontend,mode=max

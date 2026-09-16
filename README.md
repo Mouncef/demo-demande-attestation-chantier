@@ -57,3 +57,21 @@ npm install
 npm run dev        # serveur Vite avec proxy /api vers http://localhost:8000
 npm run typecheck && npm run lint && npm test && npm run build
 ```
+
+## Déploiement Kubernetes
+
+Les images sont construites et publiées sur GHCR par GitHub Actions à chaque push sur `main`
+(`ghcr.io/mouncef/demo-attestations-backend`, `ghcr.io/mouncef/demo-attestations-frontend`). Le déploiement sur le
+cluster (namespace `demo-axa`, Traefik + cert-manager, PostgreSQL et Mailpit inclus) se fait avec `make` :
+
+```bash
+cp deploy/k8s/secret.env.example deploy/k8s/secret.env   # puis renseigner les valeurs
+make k8s-install                                         # namespace, secrets, déploiement
+make k8s-status
+```
+
+* Application : https://demo.zaghratmouncef.com
+* Boîte mail de test : https://demo.zaghratmouncef.com/mailpit (authentification basique)
+
+Détails et autres cibles (`k8s-deploy TAG=…`, `k8s-logs`, `k8s-seed`, `k8s-restart`) dans
+[deploy/k8s/README.md](deploy/k8s/README.md).

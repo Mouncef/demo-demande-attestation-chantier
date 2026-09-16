@@ -1,0 +1,115 @@
+# Backend Django : un réplica (volume média ReadWriteOnce sur un nœud unique), l'entrypoint de l'image
+# attend PostgreSQL, applique les migrations, collecte les statiques et crée le jeu de démonstration.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: media
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      imagePullSecrets:
+        - name: ghcr-pull-secret
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: backend
+          image: ghcr.io/mouncef/demo-attestations-backend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+              name: http
+          envFrom:
+            - configMapRef:
+                name: app-config
+            - secretRef:
+                name: app-secrets
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests: { cpu: 200m, memory: 384Mi }
+            limits: { cpu: "1", memory: 1Gi }
+          startupProbe:
+            httpGet:
+              path: /health/
+              port: http
+              httpHeaders:
+                - name: Host
+                  value: backend
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /health/
+              port: http
+              httpHeaders:
+                - name: Host
+                  value: backend
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health/
+              port: http
+              httpHeaders:
+                - name: Host
+                  value: backend
+            periodSeconds: 30
+            failureThreshold: 3
+          volumeMounts:
+            - name: media
+              mountPath: /data/media
+            - name: tmp
+              mountPath: /tmp
+            - name: staticfiles
+              mountPath: /app/staticfiles
+            - name: cache
+              mountPath: /app/.cache
+      volumes:
+        - name: media
+          persistentVolumeClaim:
+            claimName: media
+        - name: tmp
+          emptyDir: {}
+        - name: staticfiles
+          emptyDir: {}
+        - name: cache
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 8000
+      targetPort: http
+      name: http

@@ -1,0 +1,28 @@
+# Configuration non sensible. Les secrets (clé Django, mot de passe PostgreSQL, mot de passe de démo)
+# sont dans le Secret `app-secrets` créé par `make k8s-secrets` à partir de deploy/k8s/secret.env.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  DJANGO_SETTINGS_MODULE: config.settings.prod
+  DJANGO_DEBUG: "0"
+  DJANGO_ALLOWED_HOSTS: demo.zaghratmouncef.com,backend
+  DJANGO_CORS_ALLOWED_ORIGINS: https://demo.zaghratmouncef.com
+  DJANGO_CSRF_TRUSTED_ORIGINS: https://demo.zaghratmouncef.com
+  # Traefik assure la redirection HTTP → HTTPS ; Django ne redirige pas lui-même.
+  DJANGO_SECURE_SSL_REDIRECT: "0"
+  FRONTEND_URL: https://demo.zaghratmouncef.com
+  POSTGRES_DB: attestations
+  POSTGRES_USER: attestations
+  POSTGRES_HOST: postgres
+  POSTGRES_PORT: "5432"
+  EMAIL_HOST: mailpit
+  EMAIL_PORT: "1025"
+  EMAIL_USE_TLS: "0"
+  DEFAULT_FROM_EMAIL: attestations-chantier@axa-demo.fr
+  MEDIA_ROOT: /data/media
+  SEED_DEMO_DATA: "1"
+  RELANCE_COOLDOWN_HOURS: "24"
+  RELANCE_DELAI_INITIAL_HOURS: "0"
+  IA_SIMULATED_DELAY_MS: "800"

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: demo-axa
+  labels:
+    # Pod Security Standards : profil « restricted » imposé sur tout le namespace.
+    pod-security.kubernetes.io/enforce: restricted
