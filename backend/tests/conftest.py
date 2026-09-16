@@ -2,15 +2,33 @@
 
 from __future__ import annotations
 
+import shutil
 from datetime import date, timedelta
 from decimal import Decimal
 
 import pytest
+from django.conf import settings
 from rest_framework.test import APIClient
 
 from apps.comptes.models import Role, User
 from apps.demandes.models import Demande
 from apps.demandes.services import workflow
+from apps.pieces.models import PieceJointe, TypePiece
+
+PDF_MINIMAL = (
+    b"%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
+    b"2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n"
+    b"3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 595 842]>>endobj\n"
+    b"xref\n0 4\n0000000000 65535 f \n0000000009 00000 n \n0000000052 00000 n \n0000000101 00000 n \n"
+    b"trailer<</Size 4/Root 1 0 R>>\nstartxref\n160\n%%EOF\n"
+)
+
+
+@pytest.fixture(autouse=True, scope="session")
+def _nettoyage_media():
+    """Supprime le répertoire média de test en fin de session."""
+    yield
+    shutil.rmtree(settings.MEDIA_ROOT, ignore_errors=True)
 
 
 @pytest.fixture
@@ -94,6 +112,26 @@ def creer_demande(user: User, **fdr) -> Demande:
         setattr(demande.fdr, champ, valeur)
     demande.fdr.save()
     return demande
+
+
+def ajouter_piece(demande: Demande, code: str, user: User, nom: str = "piece.pdf") -> PieceJointe:
+    import hashlib
+
+    from django.core.files.base import ContentFile
+
+    type_piece = TypePiece.objects.get(code=code)
+    piece = PieceJointe(
+        demande=demande,
+        type_piece=type_piece,
+        nom_fichier=f"{type_piece.libelle}.pdf",
+        nom_original=nom,
+        mime="application/pdf",
+        taille=len(PDF_MINIMAL),
+        deposee_par=user,
+        sha256=hashlib.sha256(PDF_MINIMAL + nom.encode()).hexdigest(),
+    )
+    piece.fichier.save("piece.pdf", ContentFile(PDF_MINIMAL), save=True)
+    return piece
 
 
 @pytest.fixture

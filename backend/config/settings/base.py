@@ -68,6 +68,7 @@ INSTALLED_APPS = [
     "apps.core",
     "apps.comptes",
     "apps.demandes",
+    "apps.pieces",
 ]
 
 MIDDLEWARE = [
@@ -162,6 +163,7 @@ REST_FRAMEWORK = {
         "user": "1000/hour",
         "anon": "100/hour",
         "login": "10/min",
+        "uploads": "60/hour",
     },
 }
 
@@ -186,6 +188,7 @@ SPECTACULAR_SETTINGS = {
     "TAGS": [
         {"name": "auth", "description": "Authentification JWT"},
         {"name": "demandes", "description": "Demandes d'attestation et FDR"},
+        {"name": "pieces", "description": "Pièces justificatives"},
         {"name": "referentiels", "description": "Valeurs de référence pour le formulaire dynamique"},
     ],
 }
@@ -231,7 +234,17 @@ METIER = {
     "FDR_DATE_DEBUT_MAX_PAST_DAYS": 365,
     "FDR_DATE_DEBUT_MAX_FUTURE_DAYS": 3 * 365,
     "FDR_DUREE_MAX_DAYS": 10 * 365,
+    # Uploads.
+    "UPLOAD_MAX_BYTES": env_int("UPLOAD_MAX_BYTES", 10 * 1024 * 1024),
+    "UPLOAD_MAX_PIECES_PAR_DEMANDE": 20,
+    "UPLOAD_MAX_TOTAL_BYTES_PAR_DEMANDE": 100 * 1024 * 1024,
+    "UPLOAD_ALLOW_OFFICE": env_bool("UPLOAD_ALLOW_OFFICE", False),
 }
+
+# Limite globale de taille des requêtes (multipart) alignée sur la taille max d'une pièce
+# avec une marge pour les champs du formulaire.
+DATA_UPLOAD_MAX_MEMORY_SIZE = METIER["UPLOAD_MAX_BYTES"] + 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 2 * 1024 * 1024  # au-delà, Django écrit dans un fichier temporaire
 
 # ---------------------------------------------------------------------------
 # Journalisation

@@ -72,14 +72,20 @@ def creer_demande(distributeur: User) -> Demande:
     return demande
 
 
+def pieces_actives(demande: Demande) -> list[Any]:
+    return list(demande.pieces.actives().select_related("type_piece"))
+
+
 def supprimer(demande_id: Any) -> None:
-    """Suppression d'un brouillon jamais envoyé."""
+    """Suppression d'un brouillon jamais envoyé (avec ses pièces et fichiers)."""
     with transaction.atomic():
         demande = _verrouiller(demande_id)
         if demande.statut != Statut.BROUILLON or demande.first_submitted_at is not None:
             raise TransitionInvalide(
                 "Seul un brouillon jamais envoyé peut être supprimé.", statut_actuel=demande.statut
             )
+        for piece in demande.pieces.all():
+            piece.fichier.delete(save=False)
         demande.delete()
 
 
@@ -92,7 +98,7 @@ def actions_possibles(demande: Demande, utilisateur: User) -> list[str]:
     actions: list[str] = []
     if utilisateur.est_distributeur and demande.distributeur_id == utilisateur.id:
         if demande.est_editable:
-            actions.append("modifier_fdr")
+            actions += ["modifier_fdr", "gerer_pieces"]
         if demande.statut == Statut.BROUILLON and demande.first_submitted_at is None:
             actions.append("supprimer")
     return actions

@@ -18,6 +18,7 @@ from rest_framework.views import APIView
 
 from apps.core.exceptions import ConflitVersion
 from apps.core.permissions import EstDistributeur
+from apps.pieces.catalogue import CATALOGUE
 
 from .choices import Decision, Statut, TypeChantier, TypeIntervention, Usage
 from .filters import DemandeFilter
@@ -28,8 +29,10 @@ from .serializers.demande import (
     FDRPatchSerializer,
     HistoriqueSerializer,
 )
-from .serializers.fdr import FDRSerializer
+from .serializers.fdr import FDRSerializer, valider_pour_envoi
 from .services import workflow
+from .services.exigences import calculer_completude
+from .services.scoring import calculer_scoring
 
 ACTIONS_DISTRIBUTEUR = {"create", "destroy", "fdr"}
 
@@ -119,6 +122,28 @@ class DemandeViewSet(
         demande = self.get_queryset().get(pk=demande.pk)
         return Response(DemandeDetailSerializer(demande, context=self.get_serializer_context()).data)
 
+    # ------------------------------------------------------------------ calculs
+    @extend_schema(summary="Pièces requises, complétude et validité du FDR")
+    @action(detail=True, methods=["get"])
+    def completude(self, request: Request, pk=None) -> Response:
+        demande = self.get_object()
+        completude = calculer_completude(demande.fdr, workflow.pieces_actives(demande))
+        erreurs_fdr = valider_pour_envoi(demande.fdr)
+        return Response(
+            {
+                **completude.to_dict(),
+                "fdr_valide": not erreurs_fdr,
+                "erreurs_fdr": erreurs_fdr,
+                "pret_pour_envoi": completude.complet and not erreurs_fdr,
+            }
+        )
+
+    @extend_schema(summary="Scoring de risque simulé (calcul à la volée)")
+    @action(detail=True, methods=["get"])
+    def scoring(self, request: Request, pk=None) -> Response:
+        demande = self.get_object()
+        return Response(calculer_scoring(demande.fdr, workflow.pieces_actives(demande)).to_dict())
+
     # ------------------------------------------------------------------ sous-ressources
     @extend_schema(summary="Historique des actions", responses=HistoriqueSerializer(many=True))
     @action(detail=True, methods=["get"])
@@ -132,7 +157,7 @@ class ReferentielsView(APIView):
 
     @extend_schema(
         tags=["referentiels"],
-        summary="Référentiels (choix du formulaire, seuils)",
+        summary="Référentiels (choix, catalogue de pièces, seuils)",
         responses={200: OpenApiResponse(description="Référentiels")},
     )
     def get(self, request: Request) -> Response:
@@ -148,6 +173,14 @@ class ReferentielsView(APIView):
                 "types_chantier": choix(TypeChantier),
                 "usages": choix(Usage),
                 "types_intervention": choix(TypeIntervention),
+                "types_pieces": [
+                    {"code": d.code, "libelle": d.libelle, "description": d.description} for d in CATALOGUE
+                ],
                 "seuil_gros_chantier": settings.METIER["SEUIL_GROS_CHANTIER"],
+                "upload": {
+                    "max_bytes": settings.METIER["UPLOAD_MAX_BYTES"],
+                    "extensions": [".pdf", ".jpg", ".jpeg", ".png"]
+                    + ([".docx", ".xlsx"] if settings.METIER["UPLOAD_ALLOW_OFFICE"] else []),
+                },
             }
         )

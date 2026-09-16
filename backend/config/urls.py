@@ -18,6 +18,7 @@ urlpatterns = [
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
     path("api/v1/auth/", include("apps.comptes.urls")),
     path("api/v1/", include("apps.demandes.urls")),
+    path("api/v1/", include("apps.pieces.urls")),
 ]
 
 admin.site.site_header = "Attestations de chantier – Administration"

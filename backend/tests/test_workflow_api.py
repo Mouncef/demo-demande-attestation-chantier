@@ -5,7 +5,7 @@ from decimal import Decimal
 import pytest
 
 from apps.demandes.models import Demande
-from tests.conftest import creer_demande
+from tests.conftest import ajouter_piece, creer_demande
 
 pytestmark = pytest.mark.django_db
 URL = "/api/v1/demandes/"
@@ -25,7 +25,7 @@ def test_creation_brouillon(api_distributeur):
     assert r.status_code == 201
     data = r.json()
     assert data["statut"] == "BROUILLON" and data["reference"].startswith("DEM-")
-    assert "modifier_fdr" in data["actions_possibles"] and "supprimer" in data["actions_possibles"]
+    assert {"modifier_fdr", "gerer_pieces", "supprimer"} <= set(data["actions_possibles"])
     assert Demande.objects.get(pk=data["id"]).historique.count() == 1
 
 
@@ -75,7 +75,21 @@ def test_filtres_et_recherche(api_siege, distributeur, autre_distributeur):
     assert api_siege.get(URL, {"distributeur": autre_distributeur.id}).json()["count"] == 1
 
 
+def test_completude_et_scoring(api_distributeur, distributeur):
+    d = creer_demande(distributeur, chantier_atypique=True)
+    r = api_distributeur.get(f"{URL}{d.pk}/completude/").json()
+    assert r["complet"] is False and set(r["manquants"]) == {"DESCRIPTIF_TECHNIQUE", "PHOTOS_PLANS"}
+    assert r["fdr_valide"] is True and r["pret_pour_envoi"] is False
+    ajouter_piece(d, "DESCRIPTIF_TECHNIQUE", distributeur, "a.pdf")
+    ajouter_piece(d, "PHOTOS_PLANS", distributeur, "b.pdf")
+    r = api_distributeur.get(f"{URL}{d.pk}/completude/").json()
+    assert r["complet"] is True and r["pret_pour_envoi"] is True
+    s = api_distributeur.get(f"{URL}{d.pk}/scoring/").json()
+    assert s["niveau"] in {"FAIBLE", "MODERE", "ELEVE"} and 0 <= s["score"] <= 100
+
+
 def test_referentiels(api_distributeur):
     ref = api_distributeur.get("/api/v1/referentiels/").json()
     assert {c["code"] for c in ref["types_chantier"]} == {"CONSTRUCTION_NEUVE", "RENOVATION"}
-    assert Decimal(ref["seuil_gros_chantier"]) == Decimal("10000000.00")
+    assert len(ref["types_pieces"]) == 12 and Decimal(ref["seuil_gros_chantier"]) == Decimal("10000000.00")
+    assert ".pdf" in ref["upload"]["extensions"]
