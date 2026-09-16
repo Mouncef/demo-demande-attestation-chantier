@@ -145,6 +145,27 @@ def test_filtres_liste(api_siege, demande_brouillon, demande_en_cours):
     assert api_siege.get(URL, {"search": "Terrasses"}).json()["count"] == 2
 
 
+def test_reporting_et_referentiels(api_siege, api_distributeur, demande_acceptee, autre_distributeur):
+    creer_demande(autre_distributeur)
+    r = api_siege.get("/api/v1/reporting/synthese/").json()
+    assert r["total"] == 2 and r["acceptees"] == 1 and r["taux_acceptation"] == 100.0 and r["periode"] == "tout"
+    assert r["par_niveau_risque"]["NON_EVALUE"] == 1 and sum(r["par_niveau_risque"].values()) == 2
+    assert r["circuit_attestation"] == {"acceptees": 1, "projets_soumis": 0, "attestations_etablies": 0}
+    assert r["par_mois"][0]["en_instruction"] == 0 and r["par_mois"][0]["brouillons"] == 1
+    assert [d["nom"] for d in r["par_distributeur"]] and sum(d["total"] for d in r["par_distributeur"]) == 2
+    assert api_siege.get("/api/v1/reporting/synthese/", {"periode": "30"}).json()["periode"] == "30"
+    assert api_siege.get("/api/v1/reporting/synthese/", {"periode": "abc"}).json()["periode"] == "tout"
+    assert r["a_traiter"] == 0
+    r_dist = api_distributeur.get("/api/v1/reporting/synthese/").json()
+    assert r_dist["total"] == 1 and "par_distributeur" not in r_dist
+    assert r_dist["par_assure"] == [
+        {"nom": "SAS BÂTI-RHÔNE", "total": 1, "acceptees": 1, "refusees": 0, "en_instruction": 0}
+    ]
+    assert r_dist["a_traiter"] == 0
+    ref = api_distributeur.get("/api/v1/referentiels/").json()
+    assert len(ref["types_pieces"]) == 12 and Decimal(ref["seuil_gros_chantier"]) == Decimal("10000000.00")
+
+
 def test_lecture_fdr(api_distributeur, demande_brouillon):
     r = api_distributeur.get(f"{URL}{demande_brouillon.pk}/fdr/")
     assert r.status_code == 200 and r.json()["assure_nom"] == "SAS BÂTI-RHÔNE"

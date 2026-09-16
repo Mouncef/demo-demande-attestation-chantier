@@ -42,7 +42,7 @@ from .serializers.demande import (
 )
 from .serializers.fdr import FDRSerializer, valider_pour_envoi
 from .services import relance as service_relance
-from .services import workflow
+from .services import reporting, workflow
 from .services.exigences import calculer_completude
 from .services.scoring import calculer_scoring
 
@@ -332,4 +332,22 @@ class ReferentielsView(APIView):
                     + ([".docx", ".xlsx"] if settings.METIER["UPLOAD_ALLOW_OFFICE"] else []),
                 },
             }
+        )
+
+
+class ReportingView(APIView):
+    """Indicateurs : globaux pour le siège, restreints à ses demandes pour un distributeur."""
+
+    @extend_schema(
+        tags=["reporting"],
+        summary="Synthèse : volumes, décisions, délais, mois, risque, circuit d'attestation (période 30/90/365/tout)",
+        parameters=[OpenApiParameter("periode", str, description="30, 90, 365 (jours) ou tout")],
+        responses={200: OpenApiResponse(description="Synthèse")},
+    )
+    def get(self, request: Request) -> Response:
+        qs = Demande.objects.all() if request.user.est_siege else Demande.objects.filter(distributeur=request.user)
+        return Response(
+            reporting.synthese(
+                qs, periode=request.query_params.get("periode"), avec_distributeurs=request.user.est_siege
+            )
         )

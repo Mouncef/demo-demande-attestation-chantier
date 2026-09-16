@@ -199,6 +199,7 @@ SPECTACULAR_SETTINGS = {
         {"name": "pieces", "description": "Pièces justificatives"},
         {"name": "attestations", "description": "Projets et attestations définitives, analyse IA"},
         {"name": "notifications", "description": "Notifications in-app"},
+        {"name": "reporting", "description": "Indicateurs"},
         {"name": "referentiels", "description": "Valeurs de référence pour le formulaire dynamique"},
     ],
 }

@@ -5,7 +5,7 @@
 # Services :
 #   db        PostgreSQL 16
 #   mailpit   serveur SMTP de test + interface web (http://localhost:8025)
-#   backend   API Django (migrations automatiques)          http://localhost:8080/api/docs/
+#   backend   API Django (migrations + seed automatiques)   http://localhost:8080/api/docs/
 #   frontend  React servi par nginx, proxy /api → backend   http://localhost:8080
 # =============================================================================
 name: attestations-chantier
@@ -59,6 +59,8 @@ services:
       EMAIL_PORT: "1025"
       DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-attestations-chantier@axa-demo.fr}
       MEDIA_ROOT: /data/media
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-1}
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-Axa-Demo-2026!}
       RELANCE_COOLDOWN_HOURS: ${RELANCE_COOLDOWN_HOURS:-24}
       RELANCE_DELAI_INITIAL_HOURS: ${RELANCE_DELAI_INITIAL_HOURS:-0}
       IA_SIMULATED_DELAY_MS: ${IA_SIMULATED_DELAY_MS:-800}

@@ -22,6 +22,20 @@ docker compose up --build
 
 Le port peut être changé avec `FRONTEND_PORT` dans `.env`.
 
+Au premier démarrage, les migrations sont appliquées et un jeu de démonstration est créé (comptes et demandes à
+différents statuts). Désactivable avec `SEED_DEMO_DATA=0`.
+
+### Comptes de démonstration
+
+Mot de passe commun : `Axa-Demo-2026!` (variable `DEMO_PASSWORD`).
+
+| Compte | Rôle |
+|---|---|
+| `distributeur@axa-demo.fr` | Distributeur (agent général) |
+| `distributeur2@axa-demo.fr` | Distributeur (courtier) |
+| `siege@axa-demo.fr` | Siège |
+| `admin@axa-demo.fr` | Administration Django (`/admin/`) |
+
 ## Stack
 
 * Backend : Python 3.13 · Django 5.2 · Django REST Framework · PostgreSQL 16 · authentification JWT
