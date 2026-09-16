@@ -1,0 +1,33 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# --- Node ---
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# --- Environnement / secrets ---
+.env
+.env.*
+!.env.example
+
+# --- Données locales ---
+backend/media/
+backend/staticfiles/
+*.sqlite3
+
+# --- IDE / OS ---
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+.env.local

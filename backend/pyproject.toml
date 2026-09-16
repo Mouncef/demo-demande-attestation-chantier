@@ -1,0 +1,86 @@
+# =============================================================================
+# Backend – Plateforme de gestion des demandes d'attestation de chantier (AXA)
+# Django 5.2 LTS + Django REST Framework. Python 3.13.
+# =============================================================================
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "attestations-chantier-backend"
+version = "1.0.0"
+description = "API REST de gestion des demandes d'attestation de chantier (FDR, pièces, workflow siège, attestation, analyse IA simulée)"
+requires-python = ">=3.12"
+dependencies = [
+    "django>=5.2,<5.3",
+    "djangorestframework>=3.16",
+    "djangorestframework-simplejwt>=5.5",
+    "drf-spectacular>=0.28",
+    "django-filter>=25.1",
+    "django-cors-headers>=4.7",
+    "psycopg[binary]>=3.2",
+    "gunicorn>=23.0",
+    "whitenoise>=6.9",
+    "weasyprint>=65",
+    "python-magic>=0.4.27",
+    "pillow>=11.0",
+    "pypdf>=5.0",
+    "nh3>=0.2.20",
+    "beautifulsoup4>=4.13",
+    "argon2-cffi>=23.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-django>=4.11",
+    "pytest-cov>=6.0",
+    "factory-boy>=3.3",
+    "ruff>=0.11",
+    "mypy>=1.15",
+    "django-stubs[compatible-mypy]>=5.2",
+    "djangorestframework-stubs>=3.16",
+]
+
+# Projet applicatif (non distribué) : aucun paquet à construire, pyproject sert
+# uniquement à déclarer les dépendances et la configuration des outils.
+[tool.setuptools]
+packages = []
+
+# --- Ruff : lint + format ---------------------------------------------------
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+exclude = ["migrations"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "N", "DJ", "C4", "SIM", "RET"]
+ignore = [
+    "S101",   # assert autorisé dans les tests
+    "DJ001",  # null=True volontaire sur les champs texte du FDR : None = « non renseigné » (brouillon) ≠ ""
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S105", "S106", "N802", "C408", "E501"]  # mots de passe de test en clair, noms explicites
+
+# --- Mypy -------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.12"
+plugins = ["mypy_django_plugin.main", "mypy_drf_plugin.main"]
+ignore_missing_imports = true
+exclude = ["migrations"]
+
+[tool.django-stubs]
+django_settings_module = "config.settings.test"
+
+# --- Pytest -----------------------------------------------------------------
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+python_files = ["test_*.py"]
+testpaths = ["tests"]
+addopts = "-q --strict-markers --reuse-db"
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.coverage.run]
+source = ["apps"]
+omit = ["*/migrations/*", "*/admin.py", "*/apps.py"]
