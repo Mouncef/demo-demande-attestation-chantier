@@ -6,7 +6,7 @@ import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import type { Node as PmNode } from '@tiptap/pm/model';
 import type { Incoherence } from '@/api/types';
 
-export const highlightKey = new PluginKey<DecorationSet>('highlight-incoherences');
+export const surlignageKey = new PluginKey<DecorationSet>('highlight-incoherences');
 
 interface Cible {
   extrait: string;
@@ -38,24 +38,24 @@ function construire(doc: PmNode, cibles: Cible[]): DecorationSet {
   return DecorationSet.create(doc, decorations);
 }
 
-export const HighlightExtension = Extension.create({
+export const SurlignageIA = Extension.create({
   name: 'highlightIncoherences',
 
   addProseMirrorPlugins() {
     return [
       new Plugin<DecorationSet>({
-        key: highlightKey,
+        key: surlignageKey,
         state: {
           init: () => DecorationSet.empty,
           apply(tr, ancien) {
-            const cibles = tr.getMeta(highlightKey) as Cible[] | undefined;
+            const cibles = tr.getMeta(surlignageKey) as Cible[] | undefined;
             if (cibles) return construire(tr.doc, cibles);
             return tr.docChanged ? ancien.map(tr.mapping, tr.doc) : ancien;
           },
         },
         props: {
           decorations(state) {
-            return highlightKey.getState(state);
+            return surlignageKey.getState(state);
           },
         },
       }),

@@ -31,6 +31,13 @@
 * Point d'extension antivirus (ClamAV) documenté dans les améliorations.
 
 ## Contenu de l'éditeur riche
+
+L'éditeur WYSIWYG produit des styles en ligne : l'attribut `style` est accepté puis **filtré propriété par
+propriété** (`apps/attestations/services/sanitize.py`, `filtrer_style`) selon une liste blanche (couleur, fond,
+police parmi les familles installées, taille 6-72 pt, interligne, alignement, retraits, largeur, sauts de page)
+et des expressions régulières sur les valeurs ; toute valeur contenant `url(`, `expression`, `@`, `\` ou une
+balise est rejetée. Les images sont acceptées uniquement en `data:image/png|jpeg;base64` (1 Mo décodé maximum,
+image ouverte et vérifiée par Pillow) ; les liens uniquement en `https://` (`rel="noopener noreferrer"`).
 * HTML **sanitisé côté serveur** avec `nh3` (liste blanche de balises et d'attributs, pas de liens, images ni
   scripts) avant stockage, rendu PDF et prévisualisation.
 * Prévisualisation servie avec `Content-Security-Policy: default-src 'none'` et affichée dans une iframe

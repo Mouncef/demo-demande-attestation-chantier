@@ -57,7 +57,9 @@ def test_projet_cycle_complet(
     r = api_distributeur.put(url, {"contenu_html": html_malveillant, "contenu_json": {"type": "doc"}}, format="json")
     assert r.status_code == 200 and r.json()["statut"] == "EN_EDITION"
     stocke = r.json()["contenu_html"]
-    assert "<script" not in stocke and "onerror" not in stocke and "<a " not in stocke and "data-variable" in stocke
+    # Script et gestionnaire d'événement retirés ; le lien non https perd son adresse (seul https est accepté).
+    assert "<script" not in stocke and "onerror" not in stocke and "data-variable" in stocke
+    assert "http://evil" not in stocke and "href=" not in stocke
     # Le siège lit mais n'édite pas le projet ; il ne peut ni le soumettre ni le valider
     assert api_siege.get(url).status_code == 200
     assert api_siege.put(url, {"contenu_html": html}, format="json").status_code == 403
@@ -307,3 +309,46 @@ def test_apercu_pdf_identique_a_l_export(api_distributeur, demande_acceptee):
     assert r["Content-Disposition"].startswith("inline")
     r = api_distributeur.post(url + "previsualiser/", {"contenu_html": gabarit["contenu_html"]}, format="json")
     assert r.status_code == 200 and b'class="document"' in r.content and b"Votre Interm" in r.content
+
+
+def test_contenu_riche_conserve_et_rendu_en_pdf(api_distributeur, demande_acceptee):
+    """Le contenu produit par l'éditeur WYSIWYG (styles, tableau coloré, image, lien, saut de page) survit à la
+    sanitisation, se rend en PDF (image embarquée) et reste cohérent pour l'analyse."""
+    import base64
+    import io
+
+    from PIL import Image
+    from pypdf import PdfReader
+
+    tampon = io.BytesIO()
+    Image.new("RGB", (8, 8), "blue").save(tampon, format="PNG")
+    image = "data:image/png;base64," + base64.b64encode(tampon.getvalue()).decode()
+    url = base(demande_acceptee)
+    html = api_distributeur.get(url + "gabarit/").json()["contenu_html"]
+    riche = (
+        html + '<p style="text-align: center; margin-left: 10mm"><span style="color: #ff1721; font-size: 14pt; '
+        'font-family: &quot;Liberation Serif&quot;, &quot;Times New Roman&quot;, serif">Mention</span> '
+        '<span style="background-color: #fff06c">surlignée</span> <sup>2</sup></p>'
+        '<table><tbody><tr><td style="background-color: #e2efff">Cellule</td><td>B</td></tr></tbody></table>'
+        f'<img src="{image}" alt="tampon" width="25%" style="width: 25%">'
+        '<div class="saut-page"></div><p><a href="https://www.axa.fr/">Site AXA</a></p>'
+    )
+    r = api_distributeur.put(url, {"contenu_html": riche}, format="json")
+    assert r.status_code == 200
+    stocke = r.json()["contenu_html"]
+    for attendu in (
+        "text-align: center",
+        "color: #ff1721",
+        "font-size: 14pt",
+        "background-color: #e2efff",
+        'class="saut-page"',
+        'href="https://www.axa.fr/"',
+        "<sup>2</sup>",
+        "data:image/png;base64,",
+    ):
+        assert attendu in stocke, attendu
+    r = api_distributeur.get(url + "pdf/")
+    assert r.status_code == 200 and r.content[:4] == b"%PDF"
+    lecteur = PdfReader(io.BytesIO(r.content))
+    assert len(lecteur.pages) >= 5  # le saut de page ajoute une page
+    assert any("/XObject" in (page.get("/Resources") or {}) for page in lecteur.pages)

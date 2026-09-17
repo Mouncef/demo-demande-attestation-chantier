@@ -138,6 +138,16 @@ siège : DÉFINITIVE (pré-remplie depuis le projet SOUMIS, sinon gabarit AXA) �
   tant qu'elle n'est pas validée ; `etat_attestation` reste `AUCUNE` / `PROJET_*` jusque-là, puis `DEFINITIVE`.
   Symétriquement, le siège ne voit l'onglet « Attestation définitive » qu'une fois le projet soumis.
 * Zones dynamiques : `<span data-variable="cle">` rafraîchies depuis le FDR à chaque rendu ; HTML sanitisé (nh3).
+* **Éditeur WYSIWYG** (`frontend/src/features/attestation/BarreOutils.tsx`) : historique, styles de bloc (titres 1-3,
+  citation), police (six familles installées dans l'image), taille en points, interligne, gras / italique /
+  souligné / barré / exposant / indice, couleur et surlignage (palette de la charte ou couleur libre), alignement,
+  retraits (pas de 5 mm), listes et niveaux, ligne horizontale, tableaux (insertion N×M, lignes, colonnes,
+  fusion, scission, ligne d'en-tête, fond de cellule), image PNG / JPEG incorporée (1 Mo, largeur relative),
+  lien https, saut de page, caractères spéciaux, date du jour, rechercher / remplacer, compteur de mots,
+  zoom, plein écran. Tout ce que l'éditeur produit est accepté par la liste blanche du serveur : balises de mise
+  en forme, `mark`, `sub`, `sup`, `img` (`data:image/png|jpeg` uniquement, décodée et vérifiée, 1 Mo), `a`
+  (`https` uniquement), attribut `style` **filtré propriété par propriété** (couleurs, police parmi la liste,
+  taille 6-72 pt, interligne 1-3, alignement, retraits, largeur, sauts de page ; aucune URL ni expression).
 * **Format officiel AXA France** (modèle `attestation-assurance-chantier.pdf`, contrat « BTPlus Concept ») :
   * *Cadre non modifiable* (`templates/pdf/attestation.html`, reproduit dans l'éditeur) : page 1 avec bloc
     « Votre Intermédiaire » (organisation, adresse, téléphone, email du distributeur – profil utilisateur),

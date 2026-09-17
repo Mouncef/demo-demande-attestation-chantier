@@ -9,5 +9,6 @@ export { Stepper, type Etape } from './Stepper';
 export { Tabs } from './Tabs';
 export { Gauge } from './Gauge';
 export { Spinner, EmptyState, Pagination, Kpi } from './Misc';
+export { Menu } from './Menu';
 export { TAILLES_PAGE } from '../pagination';
 export { StepNav } from './StepNav';

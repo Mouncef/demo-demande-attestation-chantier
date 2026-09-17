@@ -69,6 +69,15 @@ li p { margin: 0 0 3px; }
 .reserve { margin-top: 10px; }
 .signature { margin: 14mm 0 0 45%; line-height: 1.45; page-break-inside: avoid; }
 
+/* ---- Éléments de l'éditeur WYSIWYG (styles en ligne filtrés côté serveur) ---- */
+img { max-width: 100%; height: auto; }
+mark { background: #fff06c; color: inherit; }
+a { color: inherit; text-decoration: underline; }
+blockquote { border-left: 2px solid #00008f; margin: 6px 0; padding: 0 0 0 4mm; }
+hr { border: 0; border-top: 1px solid #999999; margin: 8px 0; }
+.saut-page { page-break-after: always; height: 0; margin: 0; }
+h3 { font-family: inherit; font-size: 10pt; font-weight: 700; color: #0c0e45; margin: 10px 0 4px; }
+
 /* ---- Tableaux ---- */
 table { width: 100%; border-collapse: collapse; margin: 6px 0; }
 td, th { border: 1px solid #e6e6e6; padding: 5px 7px; vertical-align: top; }

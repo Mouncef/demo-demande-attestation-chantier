@@ -88,6 +88,10 @@
   min-height: 240mm;
   outline: none;
 }
+.editeur:focus,
+.editeur:focus-visible {
+  outline: none;
+}
 .editeur .selectedCell {
   background: var(--tint-blue-1);
 }
@@ -163,4 +167,224 @@
   height: 80vh;
   border: 1px solid var(--axa-gray-300);
   background: var(--axa-gray-100);
+}
+
+/* --- Barre d'outils complète ------------------------------------------------ */
+.toolbar__groupe {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0 0.35rem;
+  border-right: 1px solid var(--axa-gray-300);
+}
+.toolbar__groupe:last-of-type,
+.toolbar__groupe--droite {
+  border-right: none;
+}
+.toolbar__groupe--droite {
+  margin-left: auto;
+}
+.toolbar__select {
+  padding: 0.2rem 1.4rem 0.2rem 0.4rem;
+  font-size: 0.8rem;
+  width: auto;
+  max-width: 11rem;
+}
+.toolbar__select--police {
+  max-width: 12rem;
+}
+.toolbar__select--taille {
+  max-width: 6.5rem;
+}
+.toolbar__ico-couleur {
+  border-bottom: 3px solid var(--axa-red);
+  line-height: 1;
+}
+.toolbar__ico-surligneur {
+  background: var(--data-sunshine);
+  padding: 0 3px;
+  line-height: 1;
+}
+.toolbar__compteur {
+  white-space: nowrap;
+  padding: 0 0.5rem;
+}
+.menu {
+  position: relative;
+  display: inline-block;
+}
+.menu__chevron {
+  font-size: 0.65em;
+  margin-left: 2px;
+}
+.menu__panneau {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  z-index: 20;
+  background: var(--axa-white);
+  border: 1px solid var(--axa-gray-300);
+  box-shadow: var(--shadow-2);
+  min-width: 12rem;
+  padding: 0.4rem;
+}
+.menu__liste {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 70vh;
+  overflow: auto;
+}
+.menu__liste hr {
+  border: 0;
+  border-top: 1px solid var(--axa-gray-200);
+  margin: 0.3rem 0;
+}
+.menu__item {
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 0.35rem 0.6rem;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.menu__item:hover:not(:disabled) {
+  background: var(--tint-blue-1);
+}
+.menu__item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.menu__item--danger {
+  color: var(--tint-red-3);
+}
+.menu__item--statique {
+  cursor: default;
+}
+.menu__item--statique:hover {
+  background: transparent;
+}
+.palette {
+  padding: 0.25rem;
+}
+.palette__grille {
+  display: grid;
+  grid-template-columns: repeat(10, 1.35rem);
+  gap: 3px;
+}
+.palette__pastille {
+  width: 1.35rem;
+  height: 1.35rem;
+  border: 1px solid var(--axa-gray-300);
+  cursor: pointer;
+  padding: 0;
+}
+.palette__pastille:hover {
+  outline: 2px solid var(--axa-blue);
+}
+.palette__libre {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+.grille-tableau__cases {
+  display: grid;
+  grid-template-columns: repeat(8, 1.1rem);
+  gap: 2px;
+  margin-bottom: 0.3rem;
+}
+.grille-tableau__case {
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 1px solid var(--axa-gray-300);
+  background: var(--axa-white);
+  padding: 0;
+  cursor: pointer;
+}
+.grille-tableau__case--active {
+  background: var(--tint-blue-1);
+  border-color: var(--axa-blue);
+}
+.caracteres {
+  display: grid;
+  grid-template-columns: repeat(6, 2rem);
+  gap: 2px;
+}
+.caracteres__item {
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--axa-gray-300);
+  background: var(--axa-white);
+  cursor: pointer;
+  font-size: 1rem;
+}
+.caracteres__item:hover {
+  background: var(--tint-blue-1);
+}
+.recherche {
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.35rem 0;
+  border-top: 1px solid var(--axa-gray-200);
+  margin-top: 0.3rem;
+}
+.recherche .input {
+  max-width: 14rem;
+  padding: 0.3rem 0.5rem;
+}
+.recherche-match {
+  background: var(--data-sunshine);
+}
+.recherche-match--courant {
+  background: var(--data-coral);
+  outline: 1px solid var(--axa-red);
+}
+/* Plein écran : l'éditeur occupe toute la fenêtre. */
+.editeur-wrap--plein-ecran {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  background: var(--axa-gray-100);
+}
+.editeur-wrap--plein-ecran .editeur-page {
+  flex: 1;
+  max-height: none;
+}
+/* Saut de page : ligne pointillée légendée à l'écran, invisible dans le PDF. */
+.editeur .saut-page {
+  height: auto;
+  border-top: 2px dashed var(--axa-blue);
+  margin: 12px 0;
+  position: relative;
+  page-break-after: auto;
+}
+.editeur .saut-page::after {
+  content: 'Saut de page';
+  position: absolute;
+  top: -0.7em;
+  right: 0;
+  font-size: 0.65rem;
+  color: var(--axa-blue);
+  background: var(--axa-white);
+  padding: 0 4px;
+}
+.editeur .saut-page.ProseMirror-selectednode {
+  outline: 2px solid var(--axa-red);
+}
+.editeur img.ProseMirror-selectednode {
+  outline: 2px solid var(--axa-red);
+}
+.editeur p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--axa-gray-500);
+  float: left;
+  height: 0;
+  pointer-events: none;
 }
