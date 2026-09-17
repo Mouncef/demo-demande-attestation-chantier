@@ -53,7 +53,7 @@ export const VariableNode = Node.create<VariableOptions>({
       mergeAttributes(HTMLAttributes, {
         'data-label': this.options.libelles[cle] ?? cle,
         title: `Zone dynamique : ${this.options.libelles[cle] ?? cle}`,
-        class: 'variable-chip',
+        class: 'zone-dynamique',
         contenteditable: 'false',
       }),
       valeur,

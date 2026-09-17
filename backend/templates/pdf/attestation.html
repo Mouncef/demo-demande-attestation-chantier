@@ -4,79 +4,16 @@ Cadre du format officiel AXA France (modèle « attestation-assurance-chantier.p
     et « Vos références », destinataire et « Date du courrier », mentions légales en pied ;
   * pages suivantes : en-tête courant « Vos références – Contrat – Client » et pagination « n/N » ;
   * filigrane PROJET pour le projet d'attestation.
+La feuille de style `attestation.css` est partagée avec l'éditeur du frontend (même rendu à l'écran et en PDF).
 {% endcomment %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="utf-8">
 <title>Attestation {{ v.numero_attestation }}</title>
-<style>{% include "pdf/base.css" %}
-/* ---- Mise en page spécifique au format d'attestation ---- */
-@page {
-  size: A4;
-  margin: 24mm 16mm 20mm 16mm;
-  @top-left { content: element(entete-courant); vertical-align: bottom; padding-bottom: 3mm; }
-  @bottom-right { content: counter(page) "/" counter(pages); font-size: 9pt; color: #0e0e0e; }
-}
-@page :first {
-  margin-top: 14mm;
-  margin-bottom: 32mm;
-  @top-left { content: none; }
-  @bottom-right { content: none; }
-  @bottom-center { content: element(mentions-legales); width: 178mm; vertical-align: top; }
-}
-body { background: #ffffff; }
-/* Les zones dynamiques ne sont pas distinguées sur le document officiel. */
-span[data-variable] { border-bottom: none; }
-.entete-courant { position: running(entete-courant); font-size: 8.5pt; color: #0e0e0e; line-height: 1.3; }
-.entete-courant strong { color: #00008f; font-weight: 700; }
-.mentions-legales { position: running(mentions-legales); font-size: 6.6pt; color: #0e0e0e; line-height: 1.3; text-align: justify; }
-
-.entete { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8mm; }
-.intermediaire { font-size: 9pt; line-height: 1.35; width: 62mm; }
-.intermediaire .etiquette { color: #00008f; font-weight: 700; margin-bottom: 2px; }
-.accroche { font-family: "Publico Headline", "Source Serif 4", "DejaVu Serif", Georgia, serif; font-size: 13pt; color: #00008f; line-height: 1.15; text-align: left; width: 50mm; }
-.accroche .barre { color: #ff1721; font-weight: 700; }
-.logo { height: 22mm; }
-
-.references { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6mm; }
-.references .gauche { width: 70mm; font-size: 9pt; }
-.references .droite { width: 70mm; font-size: 9pt; }
-.label-bleu { display: inline-block; background: #e2efff; color: #00008f; font-weight: 700; padding: 1px 6px; margin: 3px 0 2px; font-size: 8.5pt; }
-.references .valeur { display: block; margin-bottom: 2px; }
-.destinataire { font-size: 9.5pt; line-height: 1.35; margin-top: 8mm; }
-.destinataire strong { font-weight: 700; }
-.date-courrier { margin-top: 6mm; }
-
-/* ---- Corps : typographie du modèle ---- */
-h1.titre-attestation, h1 { text-align: center; font-family: "Source Sans 3", "Liberation Sans", Arial, sans-serif; font-size: 13pt; font-weight: 700; color: #0e0e0e; border: none; letter-spacing: 0.5px; margin: 6mm 0 5mm; }
-h2 { font-family: "Source Sans 3", "Liberation Sans", Arial, sans-serif; font-size: 10.5pt; font-weight: 700; color: #00008f; margin: 12px 0 5px; }
-h2.section-droite { text-align: right; border-bottom: 1px solid #00008f; padding-bottom: 2px; margin-top: 16px; page-break-after: avoid; }
-p { margin: 0 0 6px; }
-.bloc-assure { margin: 6px 0 8px 10mm; }
-ul { margin: 0 0 6px; padding-left: 6mm; }
-ul ul { list-style-type: "– "; padding-left: 5mm; }
-li { margin-bottom: 3px; }
-li p { margin: 0 0 3px; }
-.note { font-size: 8.3pt; color: #0e0e0e; margin: 4px 0 8px 4mm; }
-.reserve { border: none; background: transparent; color: #0e0e0e; padding: 0; font-size: 10pt; margin-top: 10px; }
-.signature { margin: 14mm 0 0 45%; line-height: 1.45; page-break-inside: avoid; }
-
-/* Chantier concerné (bloc propre à la plateforme) */
-table.chantier td:first-child { width: 36%; background: #e2efff; color: #0c0e45; }
-
-/* Tableau de garanties du modèle */
-table.garanties { page-break-inside: auto; font-size: 8.8pt; }
-table.garanties tr { page-break-inside: avoid; }
-table.garanties th { background: #00008f; color: #ffffff; text-align: center; font-weight: 700; border: 1px solid #00008f; padding: 5px; }
-table.garanties td { border: 1px solid #999999; padding: 4px 6px; vertical-align: middle; width: auto; background: transparent; color: #0e0e0e; }
-table.garanties td:first-child { width: 50%; background: transparent; color: #0e0e0e; }
-table.garanties td:not(:first-child) { text-align: center; }
-table.garanties tr.sous-titre td { background: #e2efff; color: #00008f; text-align: center; }
-table.garanties tr.sous-titre td:first-child { text-align: center; }
-</style>
+<style>{% include "pdf/attestation.css" %}</style>
 </head>
-<body>
+<body class="document">
 {% if est_projet %}<div class="watermark">PROJET</div>{% endif %}
 
 {# En-tête courant des pages 2 et suivantes (positionné dans la marge haute) #}

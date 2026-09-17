@@ -101,18 +101,23 @@ def enregistrer(demande: Demande, kind: str, utilisateur: User, contenu_html: st
     return attestation
 
 
+def _contexte_rendu(demande: Demande, attestation: Attestation, corps_html: str | None) -> dict[str, Any]:
+    """Contexte du gabarit : corps fourni (sanitisé) ou contenu enregistré, variables courantes."""
+    variables = calculer_variables(demande, attestation.kind, attestation)
+    corps = sanitiser_html(corps_html) if corps_html is not None else attestation.contenu_html
+    return document_complet(demande, corps, variables)
+
+
 def html_rendu(demande: Demande, attestation: Attestation, corps_html: str | None = None) -> str:
     """HTML complet (cadre AXA + corps) pour prévisualisation."""
     from django.template.loader import render_to_string
 
-    variables = calculer_variables(demande, attestation.kind, attestation)
-    corps = sanitiser_html(corps_html) if corps_html is not None else attestation.contenu_html
-    return render_to_string("pdf/attestation.html", document_complet(demande, corps, variables))
+    return render_to_string("pdf/attestation.html", _contexte_rendu(demande, attestation, corps_html))
 
 
-def generer_pdf(demande: Demande, attestation: Attestation) -> bytes:
-    variables = calculer_variables(demande, attestation.kind, attestation)
-    return rendre_pdf("pdf/attestation.html", document_complet(demande, attestation.contenu_html, variables))
+def generer_pdf(demande: Demande, attestation: Attestation, corps_html: str | None = None) -> bytes:
+    """PDF du document : contenu enregistré, ou contenu fourni (aperçu identique à l'export)."""
+    return rendre_pdf("pdf/attestation.html", _contexte_rendu(demande, attestation, corps_html))
 
 
 def analyser(demande: Demande, attestation: Attestation, utilisateur: User) -> AnalyseIA:

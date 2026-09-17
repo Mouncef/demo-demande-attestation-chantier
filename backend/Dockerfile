@@ -26,12 +26,18 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     DJANGO_SETTINGS_MODULE=config.settings.prod
 
 # Bibliothèques natives : WeasyPrint (pango/cairo/harfbuzz), libmagic (détection MIME),
-# polices (rendu PDF), client PostgreSQL (attente de la base dans l'entrypoint).
+# polices (rendu PDF, charte AXA), client PostgreSQL (attente de la base dans l'entrypoint).
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 libcairo2 libgdk-pixbuf-2.0-0 \
-        libffi8 shared-mime-info fonts-liberation fonts-dejavu-core \
+        libffi8 shared-mime-info fonts-liberation fonts-dejavu-core fonts-adobe-sourcesans3 fontconfig \
         libmagic1 postgresql-client curl \
     && rm -rf /var/lib/apt/lists/*
+
+# Polices de la charte : Source Sans 3 (paquet Debian ci-dessus) et Source Serif 4 (Google Fonts, licence OFL),
+# identiques à celles chargées par le frontend : le PDF et l'écran utilisent les mêmes glyphes et métriques.
+ADD https://raw.githubusercontent.com/google/fonts/main/ofl/sourceserif4/SourceSerif4%5Bopsz%2Cwght%5D.ttf \
+    /usr/share/fonts/truetype/source-serif-4/SourceSerif4.ttf
+RUN chmod 644 /usr/share/fonts/truetype/source-serif-4/SourceSerif4.ttf && fc-cache -f
 
 # Utilisateur applicatif sans privilèges.
 RUN groupadd --system app && useradd --system --gid app --home /app --shell /usr/sbin/nologin app

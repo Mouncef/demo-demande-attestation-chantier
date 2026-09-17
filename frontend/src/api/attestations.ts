@@ -43,10 +43,41 @@ export function useEnregistrerAttestation(demandeId: string, kind: Kind) {
   });
 }
 
+/** Convertit une réponse binaire en URL `blob:` affichable dans un iframe (à révoquer après usage). */
+function urlObjet(donnees: Blob): string {
+  return URL.createObjectURL(new Blob([donnees], { type: 'application/pdf' }));
+}
+
+/**
+ * Aperçu de l'attestation : le PDF lui-même, généré par le même moteur et le même gabarit que l'export,
+ * à partir du contenu affiché dans l'éditeur. Renvoie une URL `blob:`.
+ */
 export function usePrevisualiser(demandeId: string, kind: Kind) {
   return useMutation({
     mutationFn: async (contenu_html?: string) =>
-      (await api.post<string>(base(demandeId, kind) + 'previsualiser/', contenu_html ? { contenu_html } : {})).data,
+      urlObjet(
+        (
+          await api.post<Blob>(
+            base(demandeId, kind) + 'previsualiser/',
+            contenu_html ? { contenu_html } : {},
+            {
+              params: { sortie: 'pdf' },
+              responseType: 'blob',
+            },
+          )
+        ).data,
+      ),
+  });
+}
+
+/** PDF enregistré (projet soumis, attestation définitive validée) sous forme d'URL `blob:`. */
+export function usePdfAttestation(demandeId: string, kind: Kind, enabled: boolean) {
+  return useQuery({
+    queryKey: ['demande', demandeId, 'attestation', kind, 'pdf'],
+    queryFn: async () =>
+      urlObjet((await api.get<Blob>(base(demandeId, kind) + 'pdf/', { responseType: 'blob' })).data),
+    enabled,
+    staleTime: Infinity,
   });
 }
 

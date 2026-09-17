@@ -1,11 +1,12 @@
 // Écran 6 : éditeur WYSIWYG (TipTap) de l'attestation avec zones dynamiques et surlignage IA.
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { EditorContent, useEditor, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { TableKit } from '@tiptap/extension-table';
 import type { EnteteAttestation, Incoherence } from '@/api/types';
 import { Button } from '@/design-system/components';
 import { ClasseExtension } from './ClasseExtension';
+import { cssFeuille } from './cssFeuille';
 import { HighlightExtension, ciblesDepuisIncoherences, highlightKey } from './HighlightExtension';
 import { VariableNode } from './VariableNode';
 import './editor.css';
@@ -23,6 +24,10 @@ interface Props {
   assureur?: Assureur;
   /** Cadre du format officiel AXA (intermédiaire, références, destinataire, date) : non modifiable. */
   entete?: EnteteAttestation;
+  /** Feuille de style du document (celle du PDF) : injectée telle quelle, restreinte à la feuille. */
+  cssDocument?: string;
+  /** Projet : filigrane PROJET comme sur le PDF. */
+  estProjet?: boolean;
   variables: Record<string, string>;
   libellesVariables: Record<string, string>;
   lectureSeule: boolean;
@@ -34,6 +39,8 @@ export function AttestationEditor({
   contenuInitial,
   assureur,
   entete,
+  cssDocument,
+  estProjet = false,
   variables,
   libellesVariables,
   lectureSeule,
@@ -74,6 +81,26 @@ export function AttestationEditor({
     const tr = editor.state.tr.setMeta(highlightKey, ciblesDepuisIncoherences(incoherences));
     editor.view.dispatch(tr);
   }, [editor, incoherences]);
+
+  // La feuille garde la largeur exacte d'une page A4 (même habillage du texte que le PDF) : lorsque la colonne
+  // est plus étroite, elle est réduite à l'échelle plutôt que réagencée.
+  const cadreRef = useRef<HTMLDivElement>(null);
+  const feuilleRef = useRef<HTMLDivElement>(null);
+  const [echelle, setEchelle] = useState({ k: 1, hauteur: 0 });
+  useEffect(() => {
+    const cadre = cadreRef.current;
+    const feuille = feuilleRef.current;
+    if (!cadre || !feuille) return;
+    const ajuster = () => {
+      const k = Math.min(1, cadre.clientWidth / feuille.offsetWidth);
+      setEchelle({ k, hauteur: feuille.offsetHeight * k });
+    };
+    const observateur = new ResizeObserver(ajuster);
+    observateur.observe(cadre);
+    observateur.observe(feuille);
+    ajuster();
+    return () => observateur.disconnect();
+  }, [editor]);
 
   if (!editor) return null;
 
@@ -159,62 +186,81 @@ export function AttestationEditor({
         </div>
       )}
       <div className="editeur-page">
-        <div className="feuille">
-          {/* Cadre du format officiel AXA (identique à la première page du PDF) : non modifiable. */}
-          <header className="feuille__entete" aria-label="En-tête AXA">
-            <div className="feuille__intermediaire">
-              <div className="feuille__etiquette">Votre Intermédiaire</div>
-              <strong>{entete?.intermediaire.nom ?? '—'}</strong>
-              {entete?.intermediaire.adresse.split('\n').map((ligne) => (
-                <div key={ligne}>{ligne}</div>
-              ))}
-              {entete?.intermediaire.telephone && <div>☎ {entete.intermediaire.telephone}</div>}
-              {entete && <div>✉ {entete.intermediaire.email}</div>}
-            </div>
-            <div className="feuille__accroche">
-              réinventons <span className="feuille__barre">/</span>
-              <br />
-              notre métier
-            </div>
-            <img src="/logo.png" alt="AXA" />
-          </header>
-          <div className="feuille__references" aria-label="Références du contrat">
-            <div>
-              <span className="feuille__label">Votre contrat</span>
-              <div className="feuille__valeur">{entete?.produit ?? '—'}</div>
-              <span className="feuille__label">Vos références</span>
-              <div className="feuille__valeur">
-                Contrat
-                <br />
-                <strong>{entete?.numero_contrat || '—'}</strong>
-              </div>
-              {entete?.reference_client && (
-                <div className="feuille__valeur">
-                  Référence client
+        {/* La feuille reprend le markup et la feuille de style du gabarit PDF : même rendu que le fichier. */}
+        {cssDocument && <style>{cssFeuille(cssDocument)}</style>}
+        <div ref={cadreRef} className="feuille-cadre" style={{ height: echelle.hauteur || undefined }}>
+          <div
+            ref={feuilleRef}
+            className={`feuille document-attestation ${lectureSeule ? 'feuille--lecture' : ''}`}
+            style={{ transform: `scale(${echelle.k})` }}
+          >
+            <div className="document">
+              {estProjet && <div className="watermark">PROJET</div>}
+              <div className="entete" aria-label="En-tête AXA">
+                <div className="intermediaire">
+                  <div className="etiquette">Votre Intermédiaire</div>
+                  <strong>{entete?.intermediaire.nom ?? '—'}</strong>
                   <br />
-                  <strong>{entete.reference_client}</strong>
+                  {entete?.intermediaire.adresse.split('\n').map((ligne, i) => (
+                    <span key={i}>
+                      {ligne}
+                      <br />
+                    </span>
+                  ))}
+                  {entete?.intermediaire.telephone && (
+                    <>
+                      ☎ {entete.intermediaire.telephone}
+                      <br />
+                    </>
+                  )}
+                  {entete && <>✉ {entete.intermediaire.email}</>}
                 </div>
-              )}
-            </div>
-            <div className="feuille__destinataire">
-              <div>
-                <strong>{entete?.destinataire.nom || '—'}</strong>
-                <br />
-                {entete?.destinataire.adresse}
-                <br />
-                {entete?.destinataire.cp_ville}
+                <div className="accroche">
+                  réinventons <span className="barre">/</span>
+                  <br />
+                  notre métier
+                </div>
+                <img className="logo" src="/logo.png" alt="AXA" />
               </div>
-              <div className="feuille__date">
-                Date du courrier
-                <br />
-                <strong>{entete?.date_courrier ?? ''}</strong>
+              <div className="references" aria-label="Références du contrat">
+                <div className="gauche">
+                  <span className="label-bleu">Votre contrat</span>
+                  <span className="valeur">{entete?.produit ?? '—'}</span>
+                  <span className="label-bleu">Vos références</span>
+                  <span className="valeur">
+                    Contrat
+                    <br />
+                    <strong>{entete?.numero_contrat || '—'}</strong>
+                  </span>
+                  {entete?.reference_client && (
+                    <span className="valeur">
+                      Référence client
+                      <br />
+                      <strong>{entete.reference_client}</strong>
+                    </span>
+                  )}
+                </div>
+                <div className="droite">
+                  <div className="destinataire">
+                    <strong>{entete?.destinataire.nom || '—'}</strong>
+                    <br />
+                    {entete?.destinataire.adresse}
+                    <br />
+                    {entete?.destinataire.cp_ville}
+                  </div>
+                  <div className="date-courrier">
+                    Date du courrier
+                    <br />
+                    <strong>{entete?.date_courrier ?? ''}</strong>
+                  </div>
+                </div>
+              </div>
+              <EditorContent editor={editor} />
+              <div className="mentions-legales">
+                {entete?.mentions_legales ?? (assureur ? `${assureur.nom} – ${assureur.mention}` : '')}
               </div>
             </div>
           </div>
-          <EditorContent editor={editor} />
-          <footer className="feuille__pied">
-            {entete?.mentions_legales ?? (assureur ? `${assureur.nom} – ${assureur.mention}` : '')}
-          </footer>
         </div>
       </div>
     </div>

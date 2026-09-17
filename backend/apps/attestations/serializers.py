@@ -89,3 +89,5 @@ class GabaritSerializer(serializers.Serializer):
     assureur = serializers.DictField(child=serializers.CharField())
     # Cadre du format officiel AXA : intermédiaire, références, destinataire, date du courrier, mentions légales.
     entete = serializers.DictField()
+    # Feuille de style du document, appliquée par l'éditeur pour un rendu identique au PDF.
+    css_document = serializers.CharField()

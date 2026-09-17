@@ -271,3 +271,17 @@ def test_analyse_du_gabarit_intact_coherente(api_siege, demande_acceptee):
     # Le PDF de prévisualisation porte le cadre officiel.
     r = api_siege.post(url + "previsualiser/", {"contenu_html": html}, format="json")
     assert b"Votre Interm" in r.content and b"Date du courrier" in r.content and b"Vos r" in r.content
+
+
+def test_apercu_pdf_identique_a_l_export(api_distributeur, demande_acceptee):
+    """L'aperçu en PDF est produit par le même moteur que l'export ; le gabarit expose la feuille de style."""
+    url = base(demande_acceptee)
+    gabarit = api_distributeur.get(url + "gabarit/").json()
+    assert "@page" in gabarit["css_document"] and "table.garanties" in gabarit["css_document"]
+    r = api_distributeur.post(
+        url + "previsualiser/?sortie=pdf", {"contenu_html": gabarit["contenu_html"]}, format="json"
+    )
+    assert r.status_code == 200 and r["Content-Type"] == "application/pdf" and r.content.startswith(b"%PDF")
+    assert r["Content-Disposition"].startswith("inline")
+    r = api_distributeur.post(url + "previsualiser/", {"contenu_html": gabarit["contenu_html"]}, format="json")
+    assert r.status_code == 200 and b'class="document"' in r.content and b"Votre Interm" in r.content

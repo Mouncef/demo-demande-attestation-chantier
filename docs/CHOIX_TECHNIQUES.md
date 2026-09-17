@@ -14,7 +14,7 @@ l'installation, voir le [README](../README.md).
 | Framework backend | Django 5.2 LTS + Django REST Framework | ORM, migrations, administration, authentification et permissions intégrées ; DRF apporte serializers, viewsets, filtres et schéma OpenAPI (drf-spectacular). Version LTS pour une maintenance longue |
 | Base de données | PostgreSQL 16 | Contraintes `CHECK`, JSONB pour les snapshots et résultats d'analyse, verrous de ligne (`SELECT … FOR UPDATE`) pour sérialiser les transitions |
 | Authentification | JWT (SimpleJWT) : access 30 min, refresh 7 jours avec rotation et liste noire | API sans état, adaptée à une SPA ; pas de cookie de session donc pas de CSRF sur l'API ; révocation possible à la déconnexion |
-| PDF | WeasyPrint | Rendu PDF depuis les gabarits HTML/CSS Django, sans navigateur headless ; même gabarit pour la prévisualisation et le document final |
+| PDF | WeasyPrint | Rendu PDF depuis les gabarits HTML/CSS Django, sans navigateur headless ; l'aperçu est le PDF lui-même et l'éditeur applique la feuille de style du document avec les mêmes polices, pour un rendu identique à l'écran et dans le fichier |
 | Frontend | React 19 + TypeScript 5.9 + Vite | Composants typés, build rapide, typage de bout en bout des réponses de l'API |
 | Données côté client | TanStack Query | Cache, invalidation après chaque action, rafraîchissement du compteur de notifications |
 | Formulaires | react-hook-form + zod | Formulaire FDR dynamique avec validation déclarative, schéma miroir des règles serveur |

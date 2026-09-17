@@ -280,6 +280,8 @@ export interface Gabarit {
   assureur: { nom: string; forme: string; rcs: string; adresse: string; mention: string };
   /** Cadre non modifiable du format officiel AXA (page 1 et en-tête courant). */
   entete: EnteteAttestation;
+  /** Feuille de style du document (celle du PDF) : appliquée dans l'éditeur pour un rendu identique. */
+  css_document: string;
 }
 
 export interface EnteteAttestation {

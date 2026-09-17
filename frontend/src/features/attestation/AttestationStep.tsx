@@ -4,7 +4,7 @@
 // (notification + email). Le siège reprend le projet soumis comme base de l'attestation DÉFINITIVE,
 // la rectifie et la valide (analyse IA), ou renvoie le projet au distributeur pour correction.
 // Le distributeur ne voit l'attestation définitive qu'une fois établie par le siège.
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Editor } from '@tiptap/react';
 import { TextSelection } from '@tiptap/pm/state';
 import {
@@ -14,6 +14,7 @@ import {
   useDemanderCorrectionProjet,
   useEnregistrerAttestation,
   useGabarit,
+  usePdfAttestation,
   usePrevisualiser,
   useRouvrirAttestation,
   useSoumettreProjet,
@@ -84,7 +85,14 @@ function EditeurAttestation({ demande, kind, peutEditer, onEtablirDefinitive }: 
   const demanderCorrection = useDemanderCorrectionProjet(demande.id);
   const rouvrir = useRouvrirAttestation(demande.id, kind);
   const [editor, setEditor] = useState<Editor | null>(null);
+  // Aperçu : URL `blob:` du PDF généré depuis le contenu affiché (révoquée à la fermeture).
   const [apercu, setApercu] = useState<string | null>(null);
+  useEffect(
+    () => () => {
+      if (apercu) URL.revokeObjectURL(apercu);
+    },
+    [apercu],
+  );
   const [forcage, setForcage] = useState(false);
   const [justification, setJustification] = useState('');
   const [confirmerSoumission, setConfirmerSoumission] = useState(false);
@@ -97,6 +105,9 @@ function EditeurAttestation({ demande, kind, peutEditer, onEtablirDefinitive }: 
   const aCorriger = statut === 'A_CORRIGER';
   const definitiveEtablie = demande.etat_attestation === 'DEFINITIVE';
   const lectureSeule = !peutEditer || validee || soumise;
+  // Lecture seule avec un PDF enregistré (projet soumis, définitive validée) : on affiche le fichier lui-même.
+  const afficherPdf = lectureSeule && Boolean(attestation?.pdf_disponible);
+  const { data: pdfEnregistre } = usePdfAttestation(demande.id, kind, afficherPdf);
   const contenuInitial = attestation?.contenu_html ?? gabarit?.contenu_html ?? '';
   const variables = useMemo(() => {
     const brutes = attestation?.variables_snapshot ?? gabarit?.variables ?? {};
@@ -153,7 +164,7 @@ function EditeurAttestation({ demande, kind, peutEditer, onEtablirDefinitive }: 
 
   const ouvrirApercu = async () => {
     try {
-      // On prévisualise ce qui est affiché dans l'éditeur (contenu enregistré ou gabarit pré-rempli).
+      // Le PDF est généré depuis ce qui est affiché dans l'éditeur : l'aperçu est le fichier tel qu'il sera exporté.
       setApercu(await previsualiser.mutateAsync(editor ? editor.getHTML() : undefined));
     } catch (e) {
       toast.erreur(e);
@@ -321,16 +332,26 @@ function EditeurAttestation({ demande, kind, peutEditer, onEtablirDefinitive }: 
           </Alert>
         )}
 
-        <AttestationEditor
-          contenuInitial={contenuInitial}
-          assureur={gabarit?.assureur}
-          entete={gabarit?.entete}
-          variables={variables}
-          libellesVariables={libelles}
-          lectureSeule={lectureSeule}
-          incoherences={incoherences}
-          onEditor={onEditor}
-        />
+        {afficherPdf ? (
+          pdfEnregistre ? (
+            <iframe title="Attestation (PDF)" className="pdf-lecture" src={pdfEnregistre} />
+          ) : (
+            <Spinner label="Chargement du document…" />
+          )
+        ) : (
+          <AttestationEditor
+            contenuInitial={contenuInitial}
+            assureur={gabarit?.assureur}
+            entete={gabarit?.entete}
+            cssDocument={gabarit?.css_document}
+            estProjet={kind === 'projet'}
+            variables={variables}
+            libellesVariables={libelles}
+            lectureSeule={lectureSeule}
+            incoherences={incoherences}
+            onEditor={onEditor}
+          />
+        )}
 
         {/* --- Actions --- */}
         <div className="actions mt-2">
@@ -339,9 +360,11 @@ function EditeurAttestation({ demande, kind, peutEditer, onEtablirDefinitive }: 
               💾 Sauvegarder
             </Button>
           )}
-          <Button variante="secondary" onClick={ouvrirApercu} chargement={previsualiser.isPending}>
-            👁️ Prévisualiser
-          </Button>
+          {!afficherPdf && (
+            <Button variante="secondary" onClick={ouvrirApercu} chargement={previsualiser.isPending}>
+              👁️ Prévisualiser
+            </Button>
+          )}
           {(kind === 'projet' || validee) && (
             <Button variante="secondary" onClick={exporterPdf}>
               {kind === 'definitive' ? "📄 Télécharger l'attestation" : '📄 Export PDF'}
@@ -470,9 +493,7 @@ function EditeurAttestation({ demande, kind, peutEditer, onEtablirDefinitive }: 
         onFermer={() => setApercu(null)}
         large
       >
-        {apercu && (
-          <iframe title="Aperçu de l'attestation" className="preview-frame" sandbox="" srcDoc={apercu} />
-        )}
+        {apercu && <iframe title="Aperçu de l'attestation (PDF)" className="preview-frame" src={apercu} />}
       </Modal>
 
       <Modal

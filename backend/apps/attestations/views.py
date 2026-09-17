@@ -13,7 +13,7 @@ from __future__ import annotations
 from django.conf import settings
 from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import OpenApiResponse, extend_schema
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
@@ -35,7 +35,7 @@ from .serializers import (
     ValiderAttestationSerializer,
 )
 from .services import cycle
-from .services.gabarit import VARIABLES_DISPONIBLES, entete
+from .services.gabarit import VARIABLES_DISPONIBLES, css_document, entete
 
 KINDS = {"projet": KindAttestation.PROJET, "definitive": KindAttestation.DEFINITIVE}
 
@@ -122,15 +122,18 @@ class GabaritView(BaseAttestationView):
         data["assureur"] = settings.METIER["ASSUREUR"]
         # Cadre du format officiel (intermédiaire, références, destinataire, date du courrier, mentions).
         data["entete"] = entete(data["variables"])
+        # Feuille de style du document : l'éditeur l'applique pour un rendu identique au PDF.
+        data["css_document"] = css_document()
         return Response(data)
 
 
 @extend_schema(tags=["attestations"])
 class PrevisualiserView(BaseAttestationView):
     @extend_schema(
-        summary="Prévisualisation HTML (cadre AXA) du contenu fourni ou enregistré",
+        summary="Prévisualisation du contenu fourni ou enregistré : HTML (cadre AXA) ou PDF (`?sortie=pdf`)",
         request=PrevisualiserSerializer,
-        responses={200: OpenApiResponse(description="text/html")},
+        parameters=[OpenApiParameter("sortie", str, description="`pdf` pour obtenir le PDF réel (défaut : HTML)")],
+        responses={200: OpenApiResponse(description="text/html ou application/pdf")},
     )
     def post(self, request: Request, demande_pk=None, kind=None) -> HttpResponse:
         k = self.kind()
@@ -141,7 +144,14 @@ class PrevisualiserView(BaseAttestationView):
         if attestation is None:
             # Prévisualisation avant premier enregistrement : objet transitoire non persisté.
             attestation = Attestation(demande=demande, kind=k, contenu_html="", created_by=request.user)
-        html = cycle.html_rendu(demande, attestation, serializer.validated_data.get("contenu_html"))
+        corps = serializer.validated_data.get("contenu_html")
+        if request.query_params.get("sortie") == "pdf":
+            # Aperçu = le PDF lui-même (même moteur et même gabarit que l'export) : rendu strictement identique.
+            reponse = HttpResponse(cycle.generer_pdf(demande, attestation, corps), content_type="application/pdf")
+            reponse["Content-Disposition"] = f'inline; filename="apercu-{demande.reference}.pdf"'
+            reponse["X-Content-Type-Options"] = "nosniff"
+            return reponse
+        html = cycle.html_rendu(demande, attestation, corps)
         reponse = HttpResponse(html, content_type="text/html; charset=utf-8")
         reponse["Content-Security-Policy"] = "default-src 'none'; style-src 'unsafe-inline'; img-src data:"
         reponse["X-Frame-Options"] = "SAMEORIGIN"

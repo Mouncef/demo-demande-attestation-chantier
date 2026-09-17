@@ -21,7 +21,7 @@ from typing import Any
 
 from bs4 import BeautifulSoup
 from django.conf import settings
-from django.template.loader import render_to_string
+from django.template.loader import get_template, render_to_string
 from django.utils import timezone
 
 from apps.comptes.models import User
@@ -187,6 +187,12 @@ def entete(variables: dict[str, Any]) -> dict[str, Any]:
         "date_courrier": variables["date_courrier"],
         "mentions_legales": format_attestation["mentions_legales"],
     }
+
+
+def css_document() -> str:
+    """Feuille de style du document (fichier brut, sans traitement de gabarit) partagée avec l'éditeur."""
+    with open(get_template("pdf/attestation.css").origin.name, encoding="utf-8") as fichier:
+        return fichier.read()
 
 
 def corps_initial(variables: dict[str, Any]) -> str:

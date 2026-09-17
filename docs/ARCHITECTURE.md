@@ -53,8 +53,12 @@
 3. **Envoi** : `POST /envoyer/` → transaction : validation, complétude, snapshot, PDF, historique, notifications
    (email après commit).
 4. **Instruction** : actions siège → transitions ; `A_COMPLETER` rend la main au distributeur.
-5. **Attestation** : `GET /gabarit/` → éditeur → `PUT` (sanitisation) → `POST /analyser/` (contrôles, extraits)
-   → `POST /valider/` (empreinte vérifiée) → PDF, numéro, notification.
+5. **Attestation** : `GET /gabarit/` (contenu, variables, cadre et feuille de style du document) → éditeur →
+   `PUT` (sanitisation) → `POST /analyser/` (contrôles, extraits) → `POST /valider/` (empreinte vérifiée) → PDF,
+   numéro, notification. L'aperçu (`POST /previsualiser/?sortie=pdf`) est le PDF lui-même, produit par le même
+   moteur et le même gabarit que l'export ; la feuille de l'éditeur reprend le markup et la feuille de style
+   `templates/pdf/attestation.css` du PDF (mêmes polices installées dans l'image), et les documents en lecture
+   seule (projet soumis, définitive validée) affichent directement le fichier enregistré.
 
 ## Données persistées
 
