@@ -256,8 +256,11 @@ def actions_possibles(demande: Demande, utilisateur: User) -> list[str]:
     if utilisateur.est_siege:
         if demande.statut == Statut.EN_COURS:
             actions += ["accepter", "refuser", "demander_complements", "commenter"]
-        if demande.est_acceptee and not definitive_etablie:
+        # La définitive se construit à partir du projet soumis par le distributeur (ou reprend une définitive
+        # déjà entamée) ; tant qu'aucun projet n'est soumis, le siège n'y a pas accès.
+        projet_soumis = bool(projet and projet.statut == "SOUMISE")
+        if demande.est_acceptee and not definitive_etablie and (projet_soumis or definitive is not None):
             actions.append("editer_attestation_definitive")
-            if projet and projet.statut == "SOUMISE":
-                actions.append("traiter_projet_attestation")
+        if demande.est_acceptee and not definitive_etablie and projet_soumis:
+            actions.append("traiter_projet_attestation")
     return actions

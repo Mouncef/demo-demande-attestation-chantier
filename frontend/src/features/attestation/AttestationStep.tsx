@@ -240,7 +240,8 @@ function EditeurAttestation({ demande, kind, peutEditer, onEtablirDefinitive }: 
   if (isLoading || (attestation === null && !gabarit))
     return <Spinner label="Chargement de l'attestation…" />;
 
-  // Siège sur le projet : rien à instruire tant que le distributeur n'a pas soumis.
+  // Siège sur le projet : rien à instruire tant que le distributeur n'a pas soumis ; la définitive s'établit
+  // à partir du projet soumis, elle n'est donc pas accessible avant.
   if (kind === 'projet' && estSiege && (!attestation || statut === 'EN_EDITION')) {
     return (
       <Card titre="✏️ Projet d'attestation">
@@ -248,11 +249,8 @@ function EditeurAttestation({ demande, kind, peutEditer, onEtablirDefinitive }: 
           {attestation
             ? 'Le distributeur prépare son projet d’attestation : il ne vous a pas encore été soumis.'
             : 'Le distributeur n’a pas encore soumis de projet d’attestation.'}{' '}
-          Vous pouvez établir l’attestation définitive sans attendre depuis l’onglet dédié.
+          L’attestation définitive pourra être établie à partir de ce projet dès sa soumission.
         </Alert>
-        {onEtablirDefinitive && peutEtablir(demande) && (
-          <Button onClick={onEtablirDefinitive}>Établir l'attestation définitive</Button>
-        )}
       </Card>
     );
   }
@@ -328,7 +326,8 @@ function EditeurAttestation({ demande, kind, peutEditer, onEtablirDefinitive }: 
         )}
         {kind === 'definitive' && !validee && estSiege && !peutEditer && (
           <Alert type="info">
-            L'attestation définitive ne peut être établie que pour une demande acceptée.
+            L'attestation définitive s'établit à partir du projet soumis par le distributeur, pour une demande
+            acceptée.
           </Alert>
         )}
 
@@ -583,11 +582,6 @@ function EditeurAttestation({ demande, kind, peutEditer, onEtablirDefinitive }: 
       </Modal>
     </div>
   );
-}
-
-/** Le siège peut établir la définitive si la demande est acceptée et la définitive non encore établie. */
-function peutEtablir(demande: DemandeDetail): boolean {
-  return demande.actions_possibles.includes('editer_attestation_definitive');
 }
 
 // Libellés de repli (identiques à VARIABLES_DISPONIBLES côté backend) en attendant le gabarit.

@@ -5,10 +5,10 @@ Règles :
   * PROJET (distributeur) : préparé uniquement une fois la demande ACCEPTÉE ; « soumis » au siège
     (notification + email), repris par le distributeur tant que le siège ne l'a pas exploité, ou
     renvoyé « à corriger » par le siège avec un commentaire ; figé dès que la définitive est validée ;
-  * DEFINITIVE (siège) : établie uniquement si la demande est TRAITÉE et ACCEPTÉE, pré-remplie depuis
-    le projet soumis s'il existe ; validable seulement si la dernière analyse IA porte sur le contenu
-    courant et est COHÉRENTE, ou avec forçage justifié ; validée = numérotée et immuable ; invisible
-    pour le distributeur tant qu'elle n'est pas validée.
+  * DEFINITIVE (siège) : établie uniquement si la demande est TRAITÉE et ACCEPTÉE **et** que le
+    distributeur a soumis son projet (elle en est la reprise rectifiée) ; validable seulement si la
+    dernière analyse IA porte sur le contenu courant et est COHÉRENTE, ou avec forçage justifié ;
+    validée = numérotée et immuable ; invisible pour le distributeur tant qu'elle n'est pas validée.
 """
 
 from __future__ import annotations
@@ -40,6 +40,18 @@ def definitive_validee(demande: Demande) -> bool:
     return demande.attestations.filter(kind=KindAttestation.DEFINITIVE, statut=StatutAttestation.VALIDEE).exists()
 
 
+def projet_soumis(demande: Demande) -> Attestation | None:
+    """Projet d'attestation soumis par le distributeur (base de l'attestation définitive), s'il existe."""
+    return demande.attestations.filter(kind=KindAttestation.PROJET, statut=StatutAttestation.SOUMISE).first()
+
+
+def definitive_possible(demande: Demande) -> bool:
+    """Le siège peut établir la définitive : projet soumis, ou définitive déjà entamée sur un projet soumis."""
+    return demande.est_acceptee and (
+        projet_soumis(demande) is not None or demande.attestations.filter(kind=KindAttestation.DEFINITIVE).exists()
+    )
+
+
 def _verifier_droit_edition(demande: Demande, kind: str, utilisateur: User) -> None:
     """Contrôles d'état pour l'édition (le rôle est vérifié par les permissions DRF)."""
     if not demande.est_acceptee:
@@ -52,15 +64,26 @@ def _verifier_droit_edition(demande: Demande, kind: str, utilisateur: User) -> N
         )
     if kind == KindAttestation.PROJET and definitive_validee(demande):
         raise TransitionInvalide("L'attestation définitive est établie : le projet n'est plus modifiable.")
+    if kind == KindAttestation.DEFINITIVE and not definitive_possible(demande):
+        raise TransitionInvalide(
+            "L'attestation définitive s'établit à partir du projet soumis par le distributeur : "
+            "aucun projet n'a encore été soumis.",
+            statut_actuel=demande.statut,
+            decision=demande.decision,
+        )
 
 
 def gabarit(demande: Demande, kind: str, utilisateur: User) -> dict[str, Any]:
-    """Contenu initial proposé à l'éditeur : copie du projet s'il existe (pour la définitive), sinon gabarit AXA."""
+    """
+    Contenu initial proposé à l'éditeur : gabarit AXA pour le projet ; pour la définitive, copie du projet
+    soumis par le distributeur (409 tant qu'aucun projet n'est soumis).
+    """
+    if kind == KindAttestation.DEFINITIVE:
+        _verifier_droit_edition(demande, kind, utilisateur)
     variables = calculer_variables(
         demande, kind, signataire=utilisateur if kind == KindAttestation.DEFINITIVE else None
     )
-    # La définitive est pré-remplie depuis le projet uniquement s'il a été soumis par le distributeur.
-    projet = demande.attestations.filter(kind=KindAttestation.PROJET, statut=StatutAttestation.SOUMISE).first()
+    projet = projet_soumis(demande)
     if kind == KindAttestation.DEFINITIVE and projet:
         html = rafraichir_chips(projet.contenu_html, variables)
         contenu_json = projet.contenu_json

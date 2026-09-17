@@ -12,6 +12,15 @@ def base(demande, kind="projet"):
     return f"/api/v1/demandes/{demande.pk}/attestations/{kind}/"
 
 
+def soumettre_projet(api_distributeur, demande, html=None):
+    """Le distributeur enregistre (gabarit pré-rempli par défaut) et soumet son projet : prérequis de la définitive."""
+    url = base(demande)
+    html = html or api_distributeur.get(url + "gabarit/").json()["contenu_html"]
+    assert api_distributeur.put(url, {"contenu_html": html}, format="json").status_code == 200
+    assert api_distributeur.post(url + "soumettre/").status_code == 200
+    return html
+
+
 def test_gabarit_prerempli(api_distributeur, demande_brouillon):
     r = api_distributeur.get(base(demande_brouillon) + "gabarit/")
     assert r.status_code == 200
@@ -103,12 +112,15 @@ def test_projet_cycle_complet(
 
 
 def test_definitive_invisible_pour_le_distributeur_avant_validation(api_distributeur, api_siege, demande_acceptee):
+    soumettre_projet(api_distributeur, demande_acceptee)
     url = base(demande_acceptee, "definitive")
     html = api_siege.get(url + "gabarit/").json()["contenu_html"]
     api_siege.put(url, {"contenu_html": html}, format="json")
     assert api_distributeur.get(url).status_code == 404
     assert api_distributeur.get(url + "pdf/").status_code == 404
-    assert api_distributeur.get(f"/api/v1/demandes/{demande_acceptee.pk}/").json()["etat_attestation"] == "AUCUNE"
+    assert (
+        api_distributeur.get(f"/api/v1/demandes/{demande_acceptee.pk}/").json()["etat_attestation"] == "PROJET_SOUMIS"
+    )
 
 
 def test_definitive_prerempli_depuis_projet_soumis_et_projet_fige(api_distributeur, api_siege, demande_acceptee):
@@ -119,9 +131,14 @@ def test_definitive_prerempli_depuis_projet_soumis_et_projet_fige(api_distribute
         .replace("</h1>", "</h1><p>Mention ajoutée par l'agent.</p>")
     )
     api_distributeur.put(projet, {"contenu_html": html}, format="json")
-    # Non soumis : la définitive part du gabarit AXA
-    assert api_siege.get(base(demande_acceptee, "definitive") + "gabarit/").json()["source"] == "GABARIT"
+    # Non soumis : le siège ne peut ni consulter le gabarit ni établir la définitive, et n'a pas l'action
+    assert api_siege.get(base(demande_acceptee, "definitive") + "gabarit/").status_code == 409
+    assert api_siege.put(base(demande_acceptee, "definitive"), {"contenu_html": html}, format="json").status_code == 409
+    actions = api_siege.get(f"/api/v1/demandes/{demande_acceptee.pk}/").json()["actions_possibles"]
+    assert "editer_attestation_definitive" not in actions and "traiter_projet_attestation" not in actions
     api_distributeur.post(projet + "soumettre/")
+    actions = api_siege.get(f"/api/v1/demandes/{demande_acceptee.pk}/").json()["actions_possibles"]
+    assert {"editer_attestation_definitive", "traiter_projet_attestation"} <= set(actions)
     g = api_siege.get(base(demande_acceptee, "definitive") + "gabarit/").json()
     assert g["source"] == "PROJET" and "Mention ajoutée par l'agent" in g["contenu_html"] and g["projet_soumis_le"]
     # Le siège établit et valide la définitive : l'agent la voit, le projet est figé
@@ -149,6 +166,7 @@ def test_definitive_prerempli_depuis_projet_soumis_et_projet_fige(api_distribute
 def test_definitive_reservee_au_siege_et_a_l_acceptation(
     api_distributeur, api_siege, demande_en_cours, demande_acceptee
 ):
+    soumettre_projet(api_distributeur, demande_acceptee)
     html = api_siege.get(base(demande_acceptee, "definitive") + "gabarit/").json()["contenu_html"]
     assert (
         api_distributeur.put(base(demande_acceptee, "definitive"), {"contenu_html": html}, format="json").status_code
@@ -169,6 +187,7 @@ def test_definitive_refusee_impossible(api_siege, distributeur, siege):
 
 
 def test_definitive_validation_exige_analyse_coherente(api_siege, api_distributeur, demande_acceptee, distributeur):
+    soumettre_projet(api_distributeur, demande_acceptee)
     url = base(demande_acceptee, "definitive")
     html = api_siege.get(url + "gabarit/").json()["contenu_html"]
     # Contenu incohérent : mention d'une garantie hors périmètre + autre n° de contrat
@@ -219,14 +238,16 @@ def test_pdf_projet_sans_enregistrement(api_distributeur, api_siege, demande_acc
     assert r.status_code == 200 and b"Aper\xc3\xa7u test" in r.content
 
 
-def test_pdf_definitive_non_validee_404(api_siege, demande_acceptee):
+def test_pdf_definitive_non_validee_404(api_siege, api_distributeur, demande_acceptee):
+    soumettre_projet(api_distributeur, demande_acceptee)
     url = base(demande_acceptee, "definitive")
     api_siege.put(url, {"contenu_html": "<p>brouillon</p>"}, format="json")
     assert api_siege.get(url + "pdf/").status_code == 404
 
 
-def test_gabarit_format_officiel_axa(api_siege, demande_acceptee):
+def test_gabarit_format_officiel_axa(api_siege, api_distributeur, demande_acceptee):
     """Le gabarit reprend la structure du modèle AXA (titre, assuré + SIRET, contrat, sections, tableau, signature)."""
+    soumettre_projet(api_distributeur, demande_acceptee)
     r = api_siege.get(base(demande_acceptee, "definitive") + "gabarit/")
     assert r.status_code == 200
     data = r.json()
@@ -253,8 +274,9 @@ def test_gabarit_format_officiel_axa(api_siege, demande_acceptee):
     assert "AXA France IARD" in entete["mentions_legales"]
 
 
-def test_analyse_du_gabarit_intact_coherente(api_siege, demande_acceptee):
+def test_analyse_du_gabarit_intact_coherente(api_siege, api_distributeur, demande_acceptee):
     """Le gabarit officiel enregistré tel quel (tableau de garanties, période du contrat) est COHÉRENT."""
+    soumettre_projet(api_distributeur, demande_acceptee)
     url = base(demande_acceptee, "definitive")
     html = api_siege.get(url + "gabarit/").json()["contenu_html"]
     assert api_siege.put(url, {"contenu_html": html}, format="json").status_code == 200

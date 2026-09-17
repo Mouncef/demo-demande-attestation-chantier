@@ -129,8 +129,8 @@ function VueDistributeur({ demande }: { demande: DemandeDetail }) {
       motif: "Le projet d'attestation se prépare une fois la demande acceptée par le siège.",
     },
     definitive: {
-      ok: acceptee,
-      motif: "L'attestation définitive n'est disponible qu'une fois la demande acceptée.",
+      ok: demande.etat_attestation === 'DEFINITIVE',
+      motif: "L'attestation définitive n'est disponible qu'une fois établie par le siège.",
     },
     historique: { ok: true, motif: '' },
   };
@@ -180,14 +180,9 @@ function VueDistributeur({ demande }: { demande: DemandeDetail }) {
       termine: demande.etat_attestation === 'PROJET_SOUMIS' || demande.etat_attestation === 'DEFINITIVE',
       desactive: !acces.attestation.ok,
     },
-    ...(acceptee
-      ? [
-          {
-            cle: 'definitive',
-            libelle: 'Attestation définitive',
-            termine: demande.etat_attestation === 'DEFINITIVE',
-          },
-        ]
+    // L'attestation définitive n'apparaît au distributeur qu'une fois établie (validée) par le siège.
+    ...(demande.etat_attestation === 'DEFINITIVE'
+      ? [{ cle: 'definitive', libelle: 'Attestation définitive', termine: true }]
       : []),
     { cle: 'historique', libelle: 'Historique' },
   ];
@@ -330,7 +325,11 @@ function VueSiege({ demande }: { demande: DemandeDetail }) {
     { cle: 'dossier', libelle: 'Dossier (FDR)' },
     { cle: 'pieces', libelle: 'Risque & pièces' },
     { cle: 'projet', libelle: "Projet d'attestation" },
-    ...(demande.decision === 'ACCEPTEE' ? [{ cle: 'definitive', libelle: 'Attestation définitive' }] : []),
+    // Le siège n'accède à la définitive qu'à partir du projet soumis par le distributeur (ou une fois établie).
+    ...(demande.actions_possibles.includes('editer_attestation_definitive') ||
+    demande.etat_attestation === 'DEFINITIVE'
+      ? [{ cle: 'definitive', libelle: 'Attestation définitive' }]
+      : []),
     { cle: 'historique', libelle: 'Historique' },
   ];
   return (

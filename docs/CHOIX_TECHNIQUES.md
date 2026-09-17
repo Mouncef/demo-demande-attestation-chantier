@@ -98,8 +98,8 @@ figé à l'envoi pour l'instruction et affiché avec sa décomposition.
 ### Attestations
 
 Deux documents par demande : le **projet** préparé par le distributeur après acceptation et soumis au siège,
-puis la **définitive** établie par le siège à partir du projet, invisible pour le distributeur tant qu'elle n'est
-pas validée. Le contenu suit le format officiel AXA France : cadre non modifiable (intermédiaire, références,
+puis la **définitive** établie par le siège uniquement à partir du projet soumis (il n'y accède pas avant),
+invisible pour le distributeur tant qu'elle n'est pas validée. Le contenu suit le format officiel AXA France : cadre non modifiable (intermédiaire, références,
 destinataire, mentions légales, en-tête courant, pagination) et corps éditable (garanties, activités garanties,
 tableau de garanties, signature) dont les **zones dynamiques** sont rafraîchies depuis le FDR à chaque rendu.
 

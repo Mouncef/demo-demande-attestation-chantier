@@ -118,7 +118,8 @@ def test_cycle_complements_puis_acceptation(api_distributeur, api_siege, demande
     assert r.status_code == 200 and r.json()["nb_soumissions"] == 2 and r.json()["statut"] == "EN_COURS"
     r = api_siege.post(f"{URL}{pk}/accepter/", {"commentaire": "OK"}, format="json")
     assert r.status_code == 200 and r.json()["statut"] == "TRAITE" and r.json()["decision"] == "ACCEPTEE"
-    assert "editer_attestation_definitive" in r.json()["actions_possibles"]
+    # La définitive n'est accessible au siège qu'après soumission du projet par le distributeur.
+    assert "editer_attestation_definitive" not in r.json()["actions_possibles"]
     assert Notification.objects.filter(destinataire=distributeur, type="DEMANDE_TRAITEE").exists()
     # Terminal : plus aucune transition
     assert api_siege.post(f"{URL}{pk}/refuser/", {"motif": "Trop tard pour refuser"}, format="json").status_code == 409

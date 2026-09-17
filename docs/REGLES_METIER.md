@@ -130,12 +130,13 @@ siège : DÉFINITIVE (pré-remplie depuis le projet SOUMIS, sinon gabarit AXA) �
 | Soumettre le projet | distributeur propriétaire | statut EN_EDITION ou A_CORRIGER (409), contenu non vide | `SOUMISE`, `soumise_le`, PDF « PROJET », historique, **notification + email au siège** |
 | Reprendre le projet | distributeur propriétaire | statut SOUMISE (409), définitive non établie | `EN_EDITION` (retrait volontaire, pas d'email) |
 | Demander une correction | siège | statut SOUMISE (409), commentaire ≥ 10 caractères (400), définitive non établie | `A_CORRIGER` + commentaire, historique, **notification + email au distributeur** |
-| Créer / modifier la définitive | siège | demande TRAITE + ACCEPTEE (409), non validée (409) | contenu initial = copie du projet **soumis** (sinon gabarit AXA) |
+| Créer / modifier la définitive | siège | demande TRAITE + ACCEPTEE (409), **projet soumis** par le distributeur ou définitive déjà entamée (409 sinon, gabarit compris), non validée (409) | contenu initial = copie du projet soumis ; l'action `editer_attestation_definitive` n'est exposée qu'à partir de la soumission |
 | Analyser (IA) | siège | définitive existante | résultat persisté (empreinte du contenu) |
 | Valider la définitive | siège | analyse COHÉRENTE et à jour, ou `forcer` + justification ≥ 10 (409 sinon) | `VALIDEE`, numéro, PDF final, **notification + email au distributeur** ; projet figé |
 
-* Le distributeur **ne voit pas** l'attestation définitive (lecture 404, PDF 404) tant qu'elle n'est pas
-  validée ; `etat_attestation` reste `AUCUNE` / `PROJET_*` jusque-là, puis `DEFINITIVE`.
+* Le distributeur **ne voit pas** l'attestation définitive (lecture 404, PDF 404, étape absente du parcours)
+  tant qu'elle n'est pas validée ; `etat_attestation` reste `AUCUNE` / `PROJET_*` jusque-là, puis `DEFINITIVE`.
+  Symétriquement, le siège ne voit l'onglet « Attestation définitive » qu'une fois le projet soumis.
 * Zones dynamiques : `<span data-variable="cle">` rafraîchies depuis le FDR à chaque rendu ; HTML sanitisé (nh3).
 * **Format officiel AXA France** (modèle `attestation-assurance-chantier.pdf`, contrat « BTPlus Concept ») :
   * *Cadre non modifiable* (`templates/pdf/attestation.html`, reproduit dans l'éditeur) : page 1 avec bloc
